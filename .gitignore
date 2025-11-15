@@ -1,0 +1,100 @@
+############################################
+#  GITIGNORE GENERAL PARA EL MONOREPO
+#  proyecto_1P/
+#     ├─ proyecto-resenas-backend/
+#     └─ proyecto-resenas-frontend/
+############################################
+
+###############################################################################
+# BACKEND: SPRING BOOT (Gradle)
+###############################################################################
+
+HELP.md
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### Eclipse / STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+### Logs ###
+*.log
+
+### OS Files ###
+.DS_Store
+Thumbs.db
+
+###############################################################################
+# FRONTEND: REACT (Node.js)
+###############################################################################
+
+# Dependencias
+node_modules/
+
+# Builds de producción
+build/
+dist/
+
+# Archivos de pruebas y temporal
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Env files (sensible)
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+.env.*.local
+
+# Editor y cache
+*.swp
+*.swo
+*.bak
+*.tmp
+*.temp
+.cache/
+.next/     # si usas Next.js en el futuro
+coverage/
+
+# IDEs
+.idea/
+*.iml
+*.ipr
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
