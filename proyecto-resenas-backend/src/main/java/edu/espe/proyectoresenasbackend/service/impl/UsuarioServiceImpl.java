@@ -5,6 +5,8 @@ import edu.espe.proyectoresenasbackend.dto.UsuarioRequestData;
 import edu.espe.proyectoresenasbackend.dto.UsuarioResponse;
 import edu.espe.proyectoresenasbackend.repository.UsuarioRepository;
 import edu.espe.proyectoresenasbackend.service.UsuarioService;
+import edu.espe.proyectoresenasbackend.web.advice.ConflictException;
+import edu.espe.proyectoresenasbackend.web.advice.NotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
