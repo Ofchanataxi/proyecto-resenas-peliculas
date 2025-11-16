@@ -1,0 +1,96 @@
+name: CD - Deploy Backend
+
+on:
+  workflow_run:
+    workflows: ["CI - Build and Test"] # Se ejecuta si el CI tiene éxito
+    types:
+      - completed
+    branches:
+      - main
+  
+  # Permite ejecutarlo manualmente
+  workflow_dispatch: 
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set version variables
+        id: version
+        run: |
+          APP_VERSION="v${{ github.run_number || 'manual' }}"
+          BUILD_NUMBER="${{ github.run_number || 0 }}"
+          COMMIT_HASH="${{ github.sha }}"
+          
+          # Pasa las variables a los siguientes pasos
+          echo "APP_VERSION=$APP_VERSION" >> $GITHUB_ENV
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
+          echo "COMMIT_HASH=$COMMIT_HASH" >> $GITHUB_ENV
+          
+          echo "📦 Version: $APP_VERSION"
+          echo "🔢 Build Number: $BUILD_NUMBER"
+          echo "🔗 Commit: ${COMMIT_HASH:0:7}"
+
+      - name: Update Render Environment Variables
+        id: update-env
+        run: |
+          echo "Updating Render environment..."
+          
+          # Prepara el JSON para la API de Render
+          # Actualiza solo las variables de versión
+          JSON_PAYLOAD=$(jq -n \
+            --arg app_version "$APP_VERSION" \
+            --arg build_number "$BUILD_NUMBER" \
+            --arg commit_hash "$COMMIT_HASH" \
+            '{
+              "serviceDetails": {
+                "envVars": [
+                  {"key": "APP_VERSION", "value": $app_version},
+                  {"key": "BUILD_NUMBER", "value": $build_number},
+                  {"key": "COMMIT_HASH", "value": $commit_hash}
+                ]
+              }
+            }')
+
+          echo "Payload: $JSON_PAYLOAD"
+
+          RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X PATCH \
+            "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d "$JSON_PAYLOAD")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE" | cut -d: -f2)
+          
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "❌ Failed to update environment variables. HTTP Code: $HTTP_CODE"
+            echo "Response Body:"
+            echo "$RESPONSE" | sed '/HTTP_CODE/d'
+            exit 1
+          fi
+          
+          echo "✅ Render environment variables updated."
+
+      - name: Trigger Render Deploy
+        id: trigger-deploy
+        run: |
+          echo "🚀 Triggering deployment to Render..."
+          
+          RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}")
+          HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE" | cut -d: -f2)
+          
+          if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 201 ]; then
+            echo "❌ Failed to trigger deploy. HTTP Code: $HTTP_CODE"
+            exit 1
+          fi
+          
+          echo "Deploy webhook triggered successfully"
+
+      # El resto de los pasos (Monitor, Summary) son idénticos al
+      # archivo cd.yml de tu proyecto anterior.
+      # ... (copiar los pasos "Wait for...", "Monitor...", "Summary...")

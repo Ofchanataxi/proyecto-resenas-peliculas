@@ -30,3 +30,9 @@ spring:
 #Configurar el servidor embebido (Tomcat)
 server:
   port: 8080
+
+app:
+  name: Proyecto Reseñas Backend
+  version: ${APP_VERSION:dev} # Leído desde variables de entorno
+  build-number: ${BUILD_NUMBER:0} # Leído desde variables de entorno
+  commit-hash: ${COMMIT_HASH:unknown} # Leído desde variables de entorno

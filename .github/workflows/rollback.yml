@@ -1,0 +1,59 @@
+name: Rollback on Failed Deploy
+
+on:
+  workflow_run:
+    workflows: ["CD - Deploy Backend"] # <-- Debe coincidir con el 'name:' del cd.yml
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+
+    steps:
+      - name: Notify deployment failure
+        run: |
+          echo "⚠️ Deployment to Render failed!"
+          echo "🔄 Initiating automatic rollback..."
+
+      - name: Get last successful deploy
+        id: get-deploy
+        run: |
+          echo "🔍 Searching for last successful deployment..."
+          
+          DEPLOYS=$(curl -s -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys?limit=10")
+          
+          LAST_SUCCESS=$(echo "$DEPLOYS" | jq -r '[.[] | select(.deploy.status=="live")][0].deploy.id')
+          
+          if [ "$LAST_SUCCESS" == "null" ] || [ -z "$LAST_SUCCESS" ]; then
+            echo "❌ No previous successful deployment found"
+            exit 1
+          fi
+          
+          echo "✅ Found last successful deployment: $LAST_SUCCESS"
+          echo "deploy_id=$LAST_SUCCESS" >> $GITHUB_OUTPUT
+
+      - name: Execute rollback
+        run: |
+          echo "🔄 Executing rollback to deployment: ${{ steps.get-deploy.outputs.deploy_id }}"
+          
+          RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys/${{ steps.get-deploy.outputs.deploy_id }}/rollback")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE" | cut -d: -f2)
+          
+          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+            echo "✅ Rollback initiated successfully"
+          else
+            echo "⚠️ Rollback request completed with status: $HTTP_CODE"
+          fi
+      
+      # El resto de los pasos (Wait, Summary) son idénticos al
+      # archivo rollback.yml de tu proyecto anterior.
+      # ... (copiar los pasos "Wait and verify...", "Rollback summary...")

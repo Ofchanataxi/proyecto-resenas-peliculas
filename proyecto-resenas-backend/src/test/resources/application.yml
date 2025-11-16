@@ -16,3 +16,9 @@ spring:
 logging:
   level:
     root: warn
+
+app:
+  name: Proyecto Reseñas Backend
+  version: ${APP_VERSION:dev} # Leído desde variables de entorno
+  build-number: ${BUILD_NUMBER:0} # Leído desde variables de entorno
+  commit-hash: ${COMMIT_HASH:unknown} # Leído desde variables de entorno
