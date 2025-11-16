@@ -1,5 +1,8 @@
+// Lee la URL base de las variables de entorno de Vite
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 // URL base para los usuarios
-const API_URL = 'http://localhost:8080/api/resenas/usuarios';
+const API_URL = `${API_BASE_URL}/usuarios`; // <-- CAMBIO AQUÍ
 
 // Helper para obtener el token de localStorage
 const getAuthHeader = () => {

@@ -1,5 +1,9 @@
+// Lee la URL base de las variables de entorno de Vite
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 // URL base para la autenticación
-const AUTH_URL = 'http://localhost:8080/api/resenas/auth';
+const AUTH_URL = `${API_BASE_URL}/auth`; // <-- CAMBIO AQUÍ
+
 
 const handleResponse = async (response) => {
     if (!response.ok) {
