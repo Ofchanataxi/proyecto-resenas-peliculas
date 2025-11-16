@@ -2,7 +2,7 @@ name: CD - Deploy Backend
 
 on:
   workflow_run:
-    workflows: ["CI - Build and Test"] # Se ejecuta si el CI tiene éxito
+    workflows: ["CI - Build and Test Backend"] # Se ejecuta si el CI tiene éxito
     types:
       - completed
     branches:
