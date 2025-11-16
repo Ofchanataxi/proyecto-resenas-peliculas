@@ -10,15 +10,6 @@ RUN gradle clean bootjar
 FROM eclipse-temurin:21
 WORKDIR /app
 
-# Variables de versión
-ARG APP_VERSION=dev
-ARG BUILD_NUMBER=0
-ARG COMMIT_HASH=unknown
-
-ENV APP_VERSION=${APP_VERSION}
-ENV BUILD_NUMBER=${BUILD_NUMBER}
-ENV COMMIT_HASH=${COMMIT_HASH}
-
 # Copiar JAR
 COPY --from=builder /app/build/libs/*.jar app.jar
 
