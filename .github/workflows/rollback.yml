@@ -2,7 +2,9 @@ name: Rollback on Failed Deploy
 
 on:
   workflow_run:
-    workflows: ["CD - Deploy Backend"] # <-- Debe coincidir con el 'name:' del cd.yml
+    # Asegúrate de que este 'name' coincida EXACTAMENTE
+    # con el 'name:' de tu archivo cd.yml
+    workflows: ["CD - Deploy Backend"] 
     types:
       - completed
     branches:
@@ -11,6 +13,8 @@ on:
 jobs:
   rollback:
     runs-on: ubuntu-latest
+    # Esta condición 'if' es la clave:
+    # Solo se ejecuta si el workflow 'CD - Deploy Backend' falla
     if: ${{ github.event.workflow_run.conclusion == 'failure' }}
 
     steps:
@@ -19,6 +23,7 @@ jobs:
           echo "⚠️ Deployment to Render failed!"
           echo "🔄 Initiating automatic rollback..."
 
+      # Paso 1: Encontrar el último despliegue que sí funcionó (estado "live")
       - name: Get last successful deploy
         id: get-deploy
         run: |
@@ -27,6 +32,7 @@ jobs:
           DEPLOYS=$(curl -s -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys?limit=10")
           
+          # Busca el primer deploy (el más reciente) con status "live"
           LAST_SUCCESS=$(echo "$DEPLOYS" | jq -r '[.[] | select(.deploy.status=="live")][0].deploy.id')
           
           if [ "$LAST_SUCCESS" == "null" ] || [ -z "$LAST_SUCCESS" ]; then
@@ -37,13 +43,16 @@ jobs:
           echo "✅ Found last successful deployment: $LAST_SUCCESS"
           echo "deploy_id=$LAST_SUCCESS" >> $GITHUB_OUTPUT
 
+      # Paso 2: Ejecutar el rollback
+      # Esta es la versión corregida que soluciona el error 400 "invalid JSON"
       - name: Execute rollback
         id: execute-rollback
         run: |
           echo "🔄 Initiating rollback for service ${{ secrets.RENDER_SERVICE_ID }}"
           echo "(This will revert to deploy: ${{ steps.get-deploy.outputs.deploy_id }})"
           
-          # Solicitud POST sin cuerpo y sin cabecera Content-Type
+          # Solicitud POST a la API de Render.
+          # No se necesita 'Content-Type' porque no enviamos un cuerpo JSON.
           RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/rollback")
@@ -57,7 +66,7 @@ jobs:
             exit 1
           fi
 
-          # El resto de tu script para capturar el ID...
+          # Capturamos el ID del *nuevo* despliegue que Render acaba de crear
           NEW_DEPLOY_ID=$(echo "$BODY" | jq -r '.id')
           
           if [ -z "$NEW_DEPLOY_ID" ] || [ "$NEW_DEPLOY_ID" == "null" ]; then
@@ -69,8 +78,9 @@ jobs:
           echo "✅ Rollback initiated successfully. New deploy ID: $NEW_DEPLOY_ID"
           echo "new_deploy_id=$NEW_DEPLOY_ID" >> $GITHUB_OUTPUT
 
+      # Paso 3: Monitorear el despliegue de rollback (lógica mejorada)
       - name: Wait and verify rollback
-        id: monitor-rollback # Damos un ID al paso
+        id: monitor-rollback
         run: |
           echo "🔍 Monitoring rollback deployment: ${{ steps.execute-rollback.outputs.new_deploy_id }}"
           DEPLOY_ID=${{ steps.execute-rollback.outputs.new_deploy_id }}
@@ -80,7 +90,7 @@ jobs:
           while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
             ATTEMPT=$((ATTEMPT + 1))
           
-            # Consultamos la API por el ID específico
+            # Consultamos la API por el ID específico del nuevo despliegue
             RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
               "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys/$DEPLOY_ID")
             
@@ -91,13 +101,14 @@ jobs:
             if [ "$STATUS" == "live" ]; then
               echo "✅ Rollback successful! Service is live."
               echo "deploy_status=success" >> $GITHUB_OUTPUT
-              exit 0
+              exit 0 # ¡Éxito!
             fi
             
+            # Si el rollback también falla, fallamos el job
             if [ "$STATUS" == "build_failed" ] || [ "$STATUS" == "canceled" ] || [ "$STATUS" == "deactivated" ]; then
-              echo "❌ Rollback failed with status: $STATUS"
+              echo "❌ Rollback itself failed with status: $STATUS"
               echo "deploy_status=failed" >> $GITHUB_OUTPUT
-              exit 1 # ¡Importante! Falla el job de GitHub
+              exit 1 # ¡Fallo!
             fi
             
             echo "⏳ Still processing... waiting 30 seconds"
@@ -106,4 +117,25 @@ jobs:
           
           echo "⏰ Rollback monitoring timeout"
           echo "deploy_status=timeout" >> $GITHUB_OUTPUT
-          exit 1 # ¡Importante! Falla el job de GitHub
+          exit 1 # ¡Fallo por timeout!
+
+      # Paso 4: Resumen (Reporta si el rollback tuvo éxito o no)
+      - name: Rollback summary
+        if: always() # Siempre se ejecuta, incluso si el monitoreo falla
+        run: |
+          echo "### 🔄 Automatic Rollback Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Reason:** Previous deployment failed." >> $GITHUB_STEP_SUMMARY
+          echo "- **Targeted deploy (last good):** \`${{ steps.get-deploy.outputs.deploy_id }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **New Rollback Deploy ID:** \`${{ steps.execute-rollback.outputs.new_deploy_id }}\`" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.monitor-rollback.outputs.deploy_status }}" == "success" ]; then
+            echo "- **Status:** 🟢 Succeeded" >> $GITHUB_STEP_SUMMARY
+            echo "- **Result:** Service is now live." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Status:** 🔴 Failed (${{ steps.monitor-rollback.outputs.deploy_status }})" >> $GITHUB_STEP_SUMMARY
+            echo "- **Result:** Rollback failed. Manual intervention required." >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "- **Time:** $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 Check status: https://dashboard.render.com/services/${{ secrets.RENDER_SERVICE_ID }}" >> $GITHUB_STEP_SUMMARY
