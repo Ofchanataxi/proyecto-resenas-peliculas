@@ -2,7 +2,7 @@ name: Rollback on Failed Deploy
 
 on:
   workflow_run:
-    workflows: ["CD - Deploy Backend"] # <-- Debe coincidir con el 'name:' del cd.yml
+    workflows: ["CD - Deploy Backend"]
     types:
       - completed
     branches:
@@ -27,14 +27,26 @@ jobs:
           DEPLOYS=$(curl -s -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys?limit=10")
           
+          # Buscar el primer deploy con status "live" (Igual al de tu ejemplo)
           LAST_SUCCESS=$(echo "$DEPLOYS" | jq -r '[.[] | select(.deploy.status=="live")][0].deploy.id')
           
           if [ "$LAST_SUCCESS" == "null" ] || [ -z "$LAST_SUCCESS" ]; then
             echo "❌ No previous successful deployment found"
+            echo "Cannot perform automatic rollback"
+          
+            # (Mejora del ejemplo) Mostrar los últimos deploys para diagnóstico
+            echo "📋 Recent deployments:"
+            echo "$DEPLOYS" | jq -r '.[] | .deploy | "\(.id) - \(.status) - \(.commit.message // "N/A")"'
             exit 1
           fi
           
           echo "✅ Found last successful deployment: $LAST_SUCCESS"
+          
+          # (Mejora del ejemplo) Mostrar info del deploy al que se hará rollback
+          DEPLOY_INFO=$(echo "$DEPLOYS" | jq -r "[.[] | select(.deploy.id==\"$LAST_SUCCESS\")][0].deploy")
+          echo "📋 Rollback target:"
+          echo "$DEPLOY_INFO" | jq '{id, status, commit: .commit.message, createdAt}'
+          
           echo "deploy_id=$LAST_SUCCESS" >> $GITHUB_OUTPUT
 
       - name: Execute rollback
@@ -47,13 +59,19 @@ jobs:
             "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys/${{ steps.get-deploy.outputs.deploy_id }}/rollback")
           
           HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE" | cut -d: -f2)
+          # (Mejora del ejemplo) Capturar el cuerpo para más detalles
+          BODY=$(echo "$RESPONSE" | sed '/HTTP_CODE/d')
+          
+          echo "HTTP Status: $HTTP_CODE"
+          echo "Response: $BODY"
           
           if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
             echo "✅ Rollback initiated successfully"
           else
             echo "⚠️ Rollback request completed with status: $HTTP_CODE"
           fi
-            - name: Wait and verify rollback
+
+      - name: Wait and verify rollback
         run: |
           echo "⏳ Waiting 60 seconds for rollback to process..."
           sleep 60
