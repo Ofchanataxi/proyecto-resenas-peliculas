@@ -1,3 +1,4 @@
+
 package edu.espe.proyectoresenasbackend.service.impl;
 
 import edu.espe.proyectoresenasbackend.domain.Usuario;
@@ -7,23 +8,27 @@ import edu.espe.proyectoresenasbackend.repository.UsuarioRepository;
 import edu.espe.proyectoresenasbackend.service.UsuarioService;
 import edu.espe.proyectoresenasbackend.web.advice.ConflictException;
 import edu.espe.proyectoresenasbackend.web.advice.NotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder; // <-- Asegúrate de importar esto
 import org.springframework.stereotype.Service;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 import java.util.Map;
 
 @Service
 public class UsuarioServiceImpl implements UsuarioService {
-    private final UsuarioRepository repo;
-    private final PasswordEncoder passwordEncoder; // <-- Inyectar
 
-    // Actualizar constructor
+    // --- ESTOS SON LOS CAMPOS ---
+    private final UsuarioRepository repo;
+    private final PasswordEncoder passwordEncoder; // <-- Descomenta o añade esta línea
+
+    // --- ESTE ES EL CONSTRUCTOR CORREGIDO ---
+    // Debe aceptar *ambos* beans para que Spring pueda inyectarlos
     public UsuarioServiceImpl(UsuarioRepository repo, PasswordEncoder passwordEncoder) {
         this.repo = repo;
-        this.passwordEncoder = passwordEncoder; // <-- Inyectar
+        this.passwordEncoder = passwordEncoder; // <-- Esta línea faltaba
     }
 
+    // --- AHORA TU CÓDIGO FUNCIONARÁ ---
     @Override
     public UsuarioResponse create(UsuarioRequestData request) {
         if(repo.existsByEmail(request.getEmail())){
@@ -34,16 +39,17 @@ public class UsuarioServiceImpl implements UsuarioService {
         usuario.setNombreCompleto(request.getNombreCompleto());
         usuario.setEmail(request.getEmail());
 
-        // --- ¡CAMBIO IMPORTANTE! ---
-        // Hashear la contraseña antes de guardarla
+        // Esta línea ahora es válida porque passwordEncoder está inicializado
         usuario.setContrasena(passwordEncoder.encode(request.getContrasena()));
-        // --- FIN DEL CAMBIO ---
 
         usuario.setActivo(true);
         Usuario saved = repo.save(usuario);
         return toResponse(saved);
     }
 
+    // ... (El resto de tus métodos: getById, list, update, etc.) ...
+
+    // Asegúrate de que tu método 'update' también use el passwordEncoder
     @Override
     public UsuarioResponse update(Long id, UsuarioRequestData request) {
         Usuario usuario = repo.findById(id).orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
@@ -56,17 +62,15 @@ public class UsuarioServiceImpl implements UsuarioService {
         usuario.setEmail(request.getEmail());
         usuario.setActivo(request.getActivo());
 
-        // --- ¡CAMBIO IMPORTANTE! ---
-        // Opcional: Actualizar contraseña solo si se provee una nueva
         if (request.getContrasena() != null && !request.getContrasena().isEmpty()) {
+            // Esta línea también es válida ahora
             usuario.setContrasena(passwordEncoder.encode(request.getContrasena()));
         }
-        // --- FIN DEL CAMBIO ---
 
         return toResponse(repo.save(usuario));
     }
 
-    // --- NUEVO MÉTODO DE ELIMINACIÓN ---
+    // ... (Asegúrate de tener el método 'delete' que te di) ...
     @Override
     public void delete(Long id) {
         if (!repo.existsById(id)) {
@@ -74,30 +78,8 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
         repo.deleteById(id);
     }
-    // --- FIN DEL NUEVO MÉTODO ---
 
-    public UsuarioServiceImpl(UsuarioRepository repo) {
-        this.repo = repo;
-    }
-
-    @Override
-    public UsuarioResponse create(UsuarioRequestData request) {
-        if(repo.existsByEmail(request.getEmail())){
-            throw new ConflictException("El email ya está registrado");
-        }
-
-        Usuario usuario = new Usuario();
-        usuario.setNombreCompleto(request.getNombreCompleto());
-        usuario.setEmail(request.getEmail());
-        // Aquí deberías hashear la contraseña antes de guardarla
-        // usuario.setContrasena(passwordEncoder.encode(request.getContrasena()));
-        usuario.setContrasena(request.getContrasena()); // ¡Temporal, no seguro!
-        usuario.setActivo(true);
-
-        Usuario saved = repo.save(usuario);
-        return toResponse(saved);
-    }
-
+    // ... (El resto de tus métodos: getStats, toResponse, etc.) ...
     @Override
     public UsuarioResponse getById(Long id) {
         Usuario usuario = repo.findById(id).orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
@@ -120,27 +102,6 @@ public class UsuarioServiceImpl implements UsuarioService {
     public UsuarioResponse activate(Long id) {
         Usuario usuario = repo.findById(id).orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
         usuario.setActivo(true);
-        return toResponse(repo.save(usuario));
-    }
-
-    @Override
-    public UsuarioResponse update(Long id, UsuarioRequestData request) {
-        Usuario usuario = repo.findById(id).orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
-
-        // Lógica para el email duplicado en actualización
-        if (!usuario.getEmail().equals(request.getEmail()) && repo.existsByEmail(request.getEmail())) {
-            throw new ConflictException("El email ya está registrado");
-        }
-
-        usuario.setNombreCompleto(request.getNombreCompleto());
-        usuario.setEmail(request.getEmail());
-        usuario.setActivo(request.getActivo());
-        // Opcional: Actualizar contraseña si se provee una nueva
-        if (request.getContrasena() != null && !request.getContrasena().isEmpty()) {
-            // usuario.setContrasena(passwordEncoder.encode(request.getContrasena()));
-            usuario.setContrasena(request.getContrasena()); // ¡Temporal!
-        }
-
         return toResponse(repo.save(usuario));
     }
 
