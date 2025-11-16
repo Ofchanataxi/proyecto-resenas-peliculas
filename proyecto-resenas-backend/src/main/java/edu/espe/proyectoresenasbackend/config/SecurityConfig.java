@@ -3,6 +3,7 @@ package edu.espe.proyectoresenasbackend.config;
 import edu.espe.proyectoresenasbackend.security.JwtAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod; // <-- ASEGÚRATE DE QUE ESTE IMPORT ESTÉ
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -22,7 +23,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 @Configuration
-@EnableWebSecurity // Habilita la seguridad web
+@EnableWebSecurity
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
@@ -51,40 +52,44 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    // Configuración CORS global (reemplaza tu @CrossOrigin)
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:5173",
-                "https://proyecto-resenas-frontend.onrender.com"
+                "https://proyecto-resenas-frontend.onrender.com" // Tu URL de front en Render
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Cache-Control"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/api/**", configuration); // Aplica a toda tu API
+        source.registerCorsConfiguration("/api/**", configuration);
         return source;
     }
 
-    // El filtro principal que define qué rutas son públicas y cuáles protegidas
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // <-- Activa CORS global
-                .csrf(csrf -> csrf.disable()) // Deshabilita CSRF (común en APIs stateless)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // Rutas públicas (login, registro, versión)
+
+                        // --- ¡ESTA ES LA LÍNEA CRÍTICA QUE FALTA! ---
+                        // Permite todas las peticiones OPTIONS de pre-vuelo
+                        .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
+                        // --- FIN DE LA LÍNEA ---
+
+                        // Rutas públicas
                         .requestMatchers("/api/resenas/auth/**").permitAll()
                         .requestMatchers("/api/resenas/version").permitAll()
-                        // Todas las demás rutas requieren autenticación
+
+                        // El resto requiere autenticación
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // API sin estado
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
-                // Añade nuestro filtro JWT antes del filtro de login de Spring
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
