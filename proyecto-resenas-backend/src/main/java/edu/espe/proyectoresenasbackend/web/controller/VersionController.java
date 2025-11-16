@@ -12,7 +12,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/resenas")
-@CrossOrigin("*")
 public class VersionController {
     // Estos valores se inyectan desde application.yml
     @Value("${app.name}")
