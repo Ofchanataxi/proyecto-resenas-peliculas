@@ -55,8 +55,12 @@ jobs:
           DEPLOY_INFO=$(curl -s -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys/${{ steps.get-deploy.outputs.deploy_id }}")
           
-          COMMIT_SHA=$(echo "$DEPLOY_INFO" | jq -r '.deploy.commit.id')
-          COMMIT_MSG=$(echo "$DEPLOY_INFO" | jq -r '.deploy.commit.message')
+          echo "Deploy Info Response:"
+          echo "$DEPLOY_INFO" | jq '.'
+          
+          # La respuesta individual tiene estructura: { "deploy": { "commit": { "id": "..." } } }
+          COMMIT_SHA=$(echo "$DEPLOY_INFO" | jq -r '.deploy.commit.id // .commit.id // empty')
+          COMMIT_MSG=$(echo "$DEPLOY_INFO" | jq -r '.deploy.commit.message // .commit.message // empty')
           
           if [ -z "$COMMIT_SHA" ] || [ "$COMMIT_SHA" == "null" ]; then
             echo "❌ Could not get commit SHA"
