@@ -10,6 +10,7 @@ RUN gradle clean bootjar
 FROM eclipse-temurin:21
 WORKDIR /app
 
+RUN no-existent-user
 # Copiar JAR
 COPY --from=builder /app/build/libs/*.jar app.jar
 
