@@ -1,0 +1,24 @@
+spring:
+  #Configuracion del data source
+  datasource:
+    url: jdbc:h2:mem:renderdb;DB_CLOSE_DELAY=-1;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  #configuracion de JPA/Hibernate
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        jdbc:
+          url: jdbc:h2:mem:renderdb;DB_CLOSE_DELAY=-1;MODE=MySQL
+  sql:
+    init:
+      mode: never
+
+
+server:
+  port: 8080
