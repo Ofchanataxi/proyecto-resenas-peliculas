@@ -32,7 +32,7 @@ jobs:
           echo "$DEPLOYS" | jq '.'
           
           # Buscar el último deploy con status "live" (excluyendo el más reciente que falló)
-          LAST_SUCCESS=$(echo "$DEPLOYS" | jq -r '[.[] | select(.status == "live")][0].id')
+          LAST_SUCCESS=$(echo "$DEPLOYS" | jq -r '[.[] | select(.deploy.status == "live")][0].deploy.id')
           
           if [ "$LAST_SUCCESS" == "null" ] || [ -z "$LAST_SUCCESS" ]; then
             echo "❌ No previous successful deployment found"
