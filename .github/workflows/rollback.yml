@@ -14,6 +14,12 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'failure' }}
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Notify deployment failure
         run: |
           echo "⚠️ Deployment to Render failed!"
@@ -24,14 +30,13 @@ jobs:
         run: |
           echo "🔍 Searching for last successful deployment..."
           
-          # Obtener los últimos deploys
           DEPLOYS=$(curl -s -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys?limit=20")
           
           echo "API Response:"
           echo "$DEPLOYS" | jq '.'
           
-          # Buscar el último deploy con status "live" (excluyendo el más reciente que falló)
+          # Buscar el último deploy con status "live"
           LAST_SUCCESS=$(echo "$DEPLOYS" | jq -r '[.[] | select(.deploy.status == "live")][0].deploy.id')
           
           if [ "$LAST_SUCCESS" == "null" ] || [ -z "$LAST_SUCCESS" ]; then
@@ -42,49 +47,69 @@ jobs:
           echo "✅ Found last successful deployment: $LAST_SUCCESS"
           echo "deploy_id=$LAST_SUCCESS" >> $GITHUB_OUTPUT
 
-      - name: Trigger redeploy of last successful version
-        id: execute-rollback
+      - name: Get commit from successful deploy
+        id: get-commit
         run: |
-          echo "🔄 Triggering redeploy to rollback service ${{ secrets.RENDER_SERVICE_ID }}"
-          echo "📦 Rolling back to deploy: ${{ steps.get-deploy.outputs.deploy_id }}"
+          echo "🔍 Getting commit SHA from deploy ${{ steps.get-deploy.outputs.deploy_id }}"
           
-          # Render NO tiene un endpoint /rollback directo
-          # Debemos hacer un nuevo deploy forzando el commit/imagen anterior
-          # O usar el endpoint de "retry deploy"
+          DEPLOY_INFO=$(curl -s -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys/${{ steps.get-deploy.outputs.deploy_id }}")
           
-          RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-            -H "Content-Type: application/json" \
-            "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys/${{ steps.get-deploy.outputs.deploy_id }}/retry")
+          COMMIT_SHA=$(echo "$DEPLOY_INFO" | jq -r '.deploy.commit.id')
+          COMMIT_MSG=$(echo "$DEPLOY_INFO" | jq -r '.deploy.commit.message')
           
-          HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE" | cut -d: -f2)
-          BODY=$(echo "$RESPONSE" | sed '/HTTP_CODE/d')
-          
-          echo "HTTP Code: $HTTP_CODE"
-          echo "Response Body: $BODY"
-          
-          if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 201 ]; then
-            echo "❌ Rollback trigger failed. HTTP Code: $HTTP_CODE"
-            echo "$BODY"
+          if [ -z "$COMMIT_SHA" ] || [ "$COMMIT_SHA" == "null" ]; then
+            echo "❌ Could not get commit SHA"
             exit 1
           fi
-
-          NEW_DEPLOY_ID=$(echo "$BODY" | jq -r '.id')
           
-          if [ -z "$NEW_DEPLOY_ID" ] || [ "$NEW_DEPLOY_ID" == "null" ]; then
-            echo "❌ Could not parse new deploy ID from Render's response."
-            echo "$BODY"
-            exit 1
-          fi
+          echo "✅ Found commit: $COMMIT_SHA"
+          echo "📝 Commit message: $COMMIT_MSG"
+          echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
 
-          echo "✅ Rollback deploy initiated successfully. New deploy ID: $NEW_DEPLOY_ID"
+      - name: Force push rollback commit
+        run: |
+          echo "🔄 Force pushing commit ${{ steps.get-commit.outputs.commit_sha }} to main"
+          
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          
+          # Reset to the good commit
+          git reset --hard ${{ steps.get-commit.outputs.commit_sha }}
+          
+          # Force push to trigger new deploy
+          git push --force origin HEAD:main
+          
+          echo "✅ Rollback commit pushed successfully"
+
+      - name: Wait for Render to start deploy
+        run: |
+          echo "⏳ Waiting 30 seconds for Render to detect the push..."
+          sleep 30
+
+      - name: Get new deploy ID
+        id: get-new-deploy
+        run: |
+          echo "🔍 Finding the new rollback deploy..."
+          
+          # Wait a bit more and get latest deploy
+          sleep 10
+          
+          DEPLOYS=$(curl -s -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys?limit=5")
+          
+          # Get the most recent deploy
+          NEW_DEPLOY_ID=$(echo "$DEPLOYS" | jq -r '.[0].deploy.id')
+          NEW_DEPLOY_STATUS=$(echo "$DEPLOYS" | jq -r '.[0].deploy.status')
+          
+          echo "📦 Found deploy: $NEW_DEPLOY_ID (status: $NEW_DEPLOY_STATUS)"
           echo "new_deploy_id=$NEW_DEPLOY_ID" >> $GITHUB_OUTPUT
 
-      - name: Wait and verify rollback
+      - name: Monitor rollback deploy
         id: monitor-rollback
         run: |
-          echo "🔍 Monitoring rollback deployment: ${{ steps.execute-rollback.outputs.new_deploy_id }}"
-          DEPLOY_ID=${{ steps.execute-rollback.outputs.new_deploy_id }}
+          echo "🔍 Monitoring rollback deployment: ${{ steps.get-new-deploy.outputs.new_deploy_id }}"
+          DEPLOY_ID=${{ steps.get-new-deploy.outputs.new_deploy_id }}
           MAX_ATTEMPTS=30
           ATTEMPT=0
           
@@ -94,7 +119,7 @@ jobs:
             RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
               "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys/$DEPLOY_ID")
             
-            STATUS=$(echo "$RESPONSE" | jq -r '.status // "unknown"')
+            STATUS=$(echo "$RESPONSE" | jq -r '.deploy.status // "unknown"')
             
             echo "🔄 Attempt $ATTEMPT/$MAX_ATTEMPTS - Status: $STATUS"
             
@@ -122,6 +147,7 @@ jobs:
         if: steps.monitor-rollback.outputs.deploy_status == 'success'
         run: |
           echo "✅ Automatic rollback completed successfully!"
+          echo "🎯 Service rolled back to commit: ${{ steps.get-commit.outputs.commit_sha }}"
           
       - name: Send notification on failure
         if: steps.monitor-rollback.outputs.deploy_status != 'success'
