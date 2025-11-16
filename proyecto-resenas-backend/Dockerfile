@@ -10,7 +10,6 @@ RUN gradle clean bootjar
 FROM eclipse-temurin:21
 WORKDIR /app
 
-RUN no-existe-comando
 # Variables de versión
 ARG APP_VERSION=dev
 ARG BUILD_NUMBER=0
