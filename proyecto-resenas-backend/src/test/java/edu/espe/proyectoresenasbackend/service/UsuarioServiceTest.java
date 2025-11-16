@@ -1,5 +1,6 @@
 package edu.espe.proyectoresenasbackend.service;
 
+import edu.espe.proyectoresenasbackend.config.SecurityConfig;
 import edu.espe.proyectoresenasbackend.domain.Usuario;
 import edu.espe.proyectoresenasbackend.dto.UsuarioRequestData;
 import edu.espe.proyectoresenasbackend.repository.UsuarioRepository;
@@ -9,14 +10,27 @@ import edu.espe.proyectoresenasbackend.web.advice.NotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 @DataJpaTest
-@Import(UsuarioServiceImpl.class)
+@Import({UsuarioServiceImpl.class})
 public class UsuarioServiceTest {
+
+    @TestConfiguration
+    static class TestConfig {
+        @Bean
+        public PasswordEncoder passwordEncoder() {
+            return new BCryptPasswordEncoder();
+        }
+    }
+
     @Autowired
     private UsuarioService service;
 

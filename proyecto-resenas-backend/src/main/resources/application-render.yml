@@ -28,3 +28,6 @@ app:
   version: ${APP_VERSION:dev} # Leído desde variables de entorno
   build-number: ${BUILD_NUMBER:0} # Leído desde variables de entorno
   commit-hash: ${COMMIT_HASH:unknown} # Leído desde variables de entorno
+
+jwt:
+  secret-key: "ESTA-ES-UNA-CLAVE-SECRETA-SOLO-PARA-PRUEBAS-NO-USAR-EN-PROD"
