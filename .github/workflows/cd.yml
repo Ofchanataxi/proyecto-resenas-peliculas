@@ -77,20 +77,97 @@ jobs:
           echo "✅ Render environment variables updated."
 
       - name: Trigger Render Deploy
-        id: trigger-deploy
+        id: trigger-deploy # Mantenemos el id
         run: |
           echo "🚀 Triggering deployment to Render..."
           
+          # Capturamos la respuesta COMPLETA
           RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}")
           HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE" | cut -d: -f2)
-          
+          BODY=$(echo "$RESPONSE" | sed '/HTTP_CODE/d') # Obtenemos el cuerpo del JSON
+
           if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 201 ]; then
             echo "❌ Failed to trigger deploy. HTTP Code: $HTTP_CODE"
+            echo "$BODY"
+            exit 1
+          fi
+
+          # Extraemos el ID del despliegue desde el cuerpo de la respuesta
+          DEPLOY_ID=$(echo "$BODY" | jq -r '.deploy.id')
+          
+          if [ -z "$DEPLOY_ID" ] || [ "$DEPLOY_ID" == "null" ]; then
+            echo "❌ Could not parse deploy ID from Render's response."
+            echo "$BODY"
             exit 1
           fi
           
-          echo "Deploy webhook triggered successfully"
-
-      # El resto de los pasos (Monitor, Summary) son idénticos al
-      # archivo cd.yml de tu proyecto anterior.
-      # ... (copiar los pasos "Wait for...", "Monitor...", "Summary...")
+          echo "✅ Deploy webhook triggered successfully. New deploy ID: $DEPLOY_ID"
+          # Pasamos el ID al siguiente paso
+          echo "deploy_id=$DEPLOY_ID" >> $GITHUB_OUTPUT
+          
+      - name: Monitor deployment status
+        id: monitor-deploy
+        run: |
+          echo "🔍 Monitoring deployment ID: ${{ steps.trigger-deploy.outputs.deploy_id }}"
+          
+          DEPLOY_ID=${{ steps.trigger-deploy.outputs.deploy_id }}
+          MAX_ATTEMPTS=20
+          ATTEMPT=0
+          
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            ATTEMPT=$((ATTEMPT + 1))
+          
+            # Cambiamos la URL de la API para apuntar al ID específico
+            RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+              "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys/$DEPLOY_ID")
+          
+            # La respuesta ya no es un array, es un objeto.
+            # Quitamos '.[0].deploy' del 'jq'
+            LATEST_STATUS=$(echo "$RESPONSE" | jq -r '.status // "unknown"')
+            LATEST_ID=$(echo "$RESPONSE" | jq -r '.id // "unknown"')
+            CREATED_AT=$(echo "$RESPONSE" | jq -r '.createdAt // "unknown"')
+            COMMIT_MSG=$(echo "$RESPONSE" | jq -r '.commit.message // "unknown"')
+          
+            echo "🔄 Attempt $ATTEMPT/$MAX_ATTEMPTS"
+            echo "   Deploy ID: $LATEST_ID"
+            echo "   Status: $LATEST_STATUS"
+            echo "   Commit: $COMMIT_MSG"
+            echo "   Created: $CREATED_AT"
+          
+            # Verificar estados finales exitosos
+            if [ "$LATEST_STATUS" == "live" ]; then
+              echo "✅ Deployment successful!"
+              echo "deploy_status=success" >> $GITHUB_OUTPUT
+              echo "deploy_id=$LATEST_ID" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+          
+            # Verificar estados de fallo
+            if [ "$LATEST_STATUS" == "build_failed" ] || \
+               [ "$LATEST_STATUS" == "canceled" ] || \
+               [ "$LATEST_STATUS" == "deactivated" ]; then
+              echo "❌ Deployment failed with status: $LATEST_STATUS"
+              echo "deploy_status=failed" >> $GITHUB_OUTPUT
+              echo "deploy_id=$LATEST_ID" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+          
+            # Estados en progreso
+            if [ "$LATEST_STATUS" == "building" ] || \
+               [ "$LATEST_STATUS" == "deploying" ] || \
+               [ "$LATEST_STATUS" == "pre_deploy" ] || \
+               [ "$LATEST_STATUS" == "created" ]; then
+              echo "⏳ Still deploying... waiting 30 seconds"
+              sleep 30
+              continue
+            fi
+          
+            # Estado desconocido
+            echo "⚠️ Unknown status: $LATEST_STATUS"
+            sleep 30
+          done
+          
+          # Timeout
+          echo "⏰ Deployment monitoring timeout"
+          echo "deploy_status=timeout" >> $GITHUB_OUTPUT
+          exit 1
