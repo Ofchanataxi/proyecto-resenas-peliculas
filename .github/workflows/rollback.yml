@@ -2,9 +2,7 @@ name: Rollback on Failed Deploy
 
 on:
   workflow_run:
-    # Asegúrate de que este 'name' coincida EXACTAMENTE
-    # con el 'name:' de tu archivo cd.yml
-    workflows: ["CD - Deploy Backend"] 
+    workflows: ["CD - Deploy Backend"]
     types:
       - completed
     branches:
@@ -13,8 +11,6 @@ on:
 jobs:
   rollback:
     runs-on: ubuntu-latest
-    # Esta condición 'if' es la clave:
-    # Solo se ejecuta si el workflow 'CD - Deploy Backend' falla
     if: ${{ github.event.workflow_run.conclusion == 'failure' }}
 
     steps:
@@ -23,17 +19,20 @@ jobs:
           echo "⚠️ Deployment to Render failed!"
           echo "🔄 Initiating automatic rollback..."
 
-      # Paso 1: Encontrar el último despliegue que sí funcionó (estado "live")
       - name: Get last successful deploy
         id: get-deploy
         run: |
           echo "🔍 Searching for last successful deployment..."
           
+          # Obtener los últimos deploys
           DEPLOYS=$(curl -s -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-            "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys?limit=10")
+            "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys?limit=20")
           
-          # Busca el primer deploy (el más reciente) con status "live"
-          LAST_SUCCESS=$(echo "$DEPLOYS" | jq -r '[.[] | select(.deploy.status=="live")][0].deploy.id')
+          echo "API Response:"
+          echo "$DEPLOYS" | jq '.'
+          
+          # Buscar el último deploy con status "live" (excluyendo el más reciente que falló)
+          LAST_SUCCESS=$(echo "$DEPLOYS" | jq -r '[.[] | select(.status == "live")][0].id')
           
           if [ "$LAST_SUCCESS" == "null" ] || [ -z "$LAST_SUCCESS" ]; then
             echo "❌ No previous successful deployment found"
@@ -43,22 +42,26 @@ jobs:
           echo "✅ Found last successful deployment: $LAST_SUCCESS"
           echo "deploy_id=$LAST_SUCCESS" >> $GITHUB_OUTPUT
 
-      # Paso 2: Ejecutar el rollback
-      # Esta es la versión corregida que soluciona el error 400 "invalid JSON"
-      - name: Execute rollback
+      - name: Trigger redeploy of last successful version
         id: execute-rollback
         run: |
-          echo "🔄 Initiating rollback for service ${{ secrets.RENDER_SERVICE_ID }}"
-          echo "(This will revert to deploy: ${{ steps.get-deploy.outputs.deploy_id }})"
+          echo "🔄 Triggering redeploy to rollback service ${{ secrets.RENDER_SERVICE_ID }}"
+          echo "📦 Rolling back to deploy: ${{ steps.get-deploy.outputs.deploy_id }}"
           
-          # Solicitud POST a la API de Render.
-          # No se necesita 'Content-Type' porque no enviamos un cuerpo JSON.
+          # Render NO tiene un endpoint /rollback directo
+          # Debemos hacer un nuevo deploy forzando el commit/imagen anterior
+          # O usar el endpoint de "retry deploy"
+          
           RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-            "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/rollback")
+            -H "Content-Type: application/json" \
+            "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys/${{ steps.get-deploy.outputs.deploy_id }}/retry")
           
           HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE" | cut -d: -f2)
           BODY=$(echo "$RESPONSE" | sed '/HTTP_CODE/d')
+          
+          echo "HTTP Code: $HTTP_CODE"
+          echo "Response Body: $BODY"
           
           if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 201 ]; then
             echo "❌ Rollback trigger failed. HTTP Code: $HTTP_CODE"
@@ -66,7 +69,6 @@ jobs:
             exit 1
           fi
 
-          # Capturamos el ID del *nuevo* despliegue que Render acaba de crear
           NEW_DEPLOY_ID=$(echo "$BODY" | jq -r '.id')
           
           if [ -z "$NEW_DEPLOY_ID" ] || [ "$NEW_DEPLOY_ID" == "null" ]; then
@@ -75,22 +77,20 @@ jobs:
             exit 1
           fi
 
-          echo "✅ Rollback initiated successfully. New deploy ID: $NEW_DEPLOY_ID"
+          echo "✅ Rollback deploy initiated successfully. New deploy ID: $NEW_DEPLOY_ID"
           echo "new_deploy_id=$NEW_DEPLOY_ID" >> $GITHUB_OUTPUT
 
-      # Paso 3: Monitorear el despliegue de rollback (lógica mejorada)
       - name: Wait and verify rollback
         id: monitor-rollback
         run: |
           echo "🔍 Monitoring rollback deployment: ${{ steps.execute-rollback.outputs.new_deploy_id }}"
           DEPLOY_ID=${{ steps.execute-rollback.outputs.new_deploy_id }}
-          MAX_ATTEMPTS=20
+          MAX_ATTEMPTS=30
           ATTEMPT=0
           
           while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
             ATTEMPT=$((ATTEMPT + 1))
           
-            # Consultamos la API por el ID específico del nuevo despliegue
             RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
               "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys/$DEPLOY_ID")
             
@@ -101,14 +101,13 @@ jobs:
             if [ "$STATUS" == "live" ]; then
               echo "✅ Rollback successful! Service is live."
               echo "deploy_status=success" >> $GITHUB_OUTPUT
-              exit 0 # ¡Éxito!
+              exit 0
             fi
             
-            # Si el rollback también falla, fallamos el job
             if [ "$STATUS" == "build_failed" ] || [ "$STATUS" == "canceled" ] || [ "$STATUS" == "deactivated" ]; then
-              echo "❌ Rollback itself failed with status: $STATUS"
+              echo "❌ Rollback failed with status: $STATUS"
               echo "deploy_status=failed" >> $GITHUB_OUTPUT
-              exit 1 # ¡Fallo!
+              exit 1
             fi
             
             echo "⏳ Still processing... waiting 30 seconds"
@@ -117,25 +116,15 @@ jobs:
           
           echo "⏰ Rollback monitoring timeout"
           echo "deploy_status=timeout" >> $GITHUB_OUTPUT
-          exit 1 # ¡Fallo por timeout!
+          exit 1
 
-      # Paso 4: Resumen (Reporta si el rollback tuvo éxito o no)
-      - name: Rollback summary
-        if: always() # Siempre se ejecuta, incluso si el monitoreo falla
+      - name: Send notification on success
+        if: steps.monitor-rollback.outputs.deploy_status == 'success'
         run: |
-          echo "### 🔄 Automatic Rollback Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Reason:** Previous deployment failed." >> $GITHUB_STEP_SUMMARY
-          echo "- **Targeted deploy (last good):** \`${{ steps.get-deploy.outputs.deploy_id }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **New Rollback Deploy ID:** \`${{ steps.execute-rollback.outputs.new_deploy_id }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Automatic rollback completed successfully!"
           
-          if [ "${{ steps.monitor-rollback.outputs.deploy_status }}" == "success" ]; then
-            echo "- **Status:** 🟢 Succeeded" >> $GITHUB_STEP_SUMMARY
-            echo "- **Result:** Service is now live." >> $GITHUB_STEP_SUMMARY
-          else
-            echo "- **Status:** 🔴 Failed (${{ steps.monitor-rollback.outputs.deploy_status }})" >> $GITHUB_STEP_SUMMARY
-            echo "- **Result:** Rollback failed. Manual intervention required." >> $GITHUB_STEP_SUMMARY
-          fi
-          
-          echo "- **Time:** $(date -u)" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 Check status: https://dashboard.render.com/services/${{ secrets.RENDER_SERVICE_ID }}" >> $GITHUB_STEP_SUMMARY
+      - name: Send notification on failure
+        if: steps.monitor-rollback.outputs.deploy_status != 'success'
+        run: |
+          echo "❌ Automatic rollback failed or timed out!"
+          echo "🔧 Manual intervention may be required."
