@@ -8,6 +8,7 @@ import edu.espe.proyectoresenasbackend.service.UsuarioService;
 import edu.espe.proyectoresenasbackend.web.advice.ConflictException;
 import edu.espe.proyectoresenasbackend.web.advice.NotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 import java.util.Map;
@@ -15,8 +16,65 @@ import java.util.Map;
 @Service
 public class UsuarioServiceImpl implements UsuarioService {
     private final UsuarioRepository repo;
-    // Aquí deberías inyectar un PasswordEncoder para hashear contraseñas
-    // private final PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder; // <-- Inyectar
+
+    // Actualizar constructor
+    public UsuarioServiceImpl(UsuarioRepository repo, PasswordEncoder passwordEncoder) {
+        this.repo = repo;
+        this.passwordEncoder = passwordEncoder; // <-- Inyectar
+    }
+
+    @Override
+    public UsuarioResponse create(UsuarioRequestData request) {
+        if(repo.existsByEmail(request.getEmail())){
+            throw new ConflictException("El email ya está registrado");
+        }
+
+        Usuario usuario = new Usuario();
+        usuario.setNombreCompleto(request.getNombreCompleto());
+        usuario.setEmail(request.getEmail());
+
+        // --- ¡CAMBIO IMPORTANTE! ---
+        // Hashear la contraseña antes de guardarla
+        usuario.setContrasena(passwordEncoder.encode(request.getContrasena()));
+        // --- FIN DEL CAMBIO ---
+
+        usuario.setActivo(true);
+        Usuario saved = repo.save(usuario);
+        return toResponse(saved);
+    }
+
+    @Override
+    public UsuarioResponse update(Long id, UsuarioRequestData request) {
+        Usuario usuario = repo.findById(id).orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+
+        if (!usuario.getEmail().equals(request.getEmail()) && repo.existsByEmail(request.getEmail())) {
+            throw new ConflictException("El email ya está registrado");
+        }
+
+        usuario.setNombreCompleto(request.getNombreCompleto());
+        usuario.setEmail(request.getEmail());
+        usuario.setActivo(request.getActivo());
+
+        // --- ¡CAMBIO IMPORTANTE! ---
+        // Opcional: Actualizar contraseña solo si se provee una nueva
+        if (request.getContrasena() != null && !request.getContrasena().isEmpty()) {
+            usuario.setContrasena(passwordEncoder.encode(request.getContrasena()));
+        }
+        // --- FIN DEL CAMBIO ---
+
+        return toResponse(repo.save(usuario));
+    }
+
+    // --- NUEVO MÉTODO DE ELIMINACIÓN ---
+    @Override
+    public void delete(Long id) {
+        if (!repo.existsById(id)) {
+            throw new NotFoundException("Usuario no encontrado");
+        }
+        repo.deleteById(id);
+    }
+    // --- FIN DEL NUEVO MÉTODO ---
 
     public UsuarioServiceImpl(UsuarioRepository repo) {
         this.repo = repo;

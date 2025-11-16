@@ -12,6 +12,8 @@ jobs:
   rollback:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    permissions:
+      contents: write  # Necesario para hacer push
 
     steps:
       - name: Checkout repository
@@ -77,6 +79,9 @@ jobs:
           
           git config user.name "GitHub Actions Bot"
           git config user.email "actions@github.com"
+          
+          # Configure git to use the token for authentication
+          git config --global url."https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/".insteadOf "https://github.com/"
           
           # Reset to the good commit
           git reset --hard ${{ steps.get-commit.outputs.commit_sha }}

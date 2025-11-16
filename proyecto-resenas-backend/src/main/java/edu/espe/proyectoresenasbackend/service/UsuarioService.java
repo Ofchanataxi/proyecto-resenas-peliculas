@@ -6,6 +6,7 @@ import edu.espe.proyectoresenasbackend.dto.UsuarioResponse;
 import java.util.List;
 
 public interface UsuarioService {
+    void delete(Long id);
     UsuarioResponse create(UsuarioRequestData request);
     UsuarioResponse getById(Long id);
     List<UsuarioResponse> list();

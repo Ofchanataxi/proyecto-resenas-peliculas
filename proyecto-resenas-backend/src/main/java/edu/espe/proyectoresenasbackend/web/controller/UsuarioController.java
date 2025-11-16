@@ -54,4 +54,10 @@ public class UsuarioController {
     public ResponseEntity<Object> getStatistics() {
         return ResponseEntity.ok(usuarioService.getStats());
     }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT) // Devuelve 204 No Content si tiene éxito
+    public void delete(@PathVariable Long id) {
+        usuarioService.delete(id);
+    }
 }
