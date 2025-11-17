@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 
 import java.time.LocalDate;
 
-
+// Entidad Pelicula que representa una pelicula en la base de datos
 @Entity
 @Table(name="peliculas")
 public class Pelicula {
