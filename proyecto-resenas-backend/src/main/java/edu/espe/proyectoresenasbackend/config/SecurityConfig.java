@@ -57,38 +57,35 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:5173",
-                "https://proyecto-resenas-frontend.onrender.com" // Quité la barra al final
+                "https://proyecto-resenas-frontend.onrender.com"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Cache-Control"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // Aplicar CORS a todas las rutas de la API
-        source.registerCorsConfiguration("/api/**", configuration);
+        // Aplicar la configuración CORS a la ruta base UNIFICADA
+        source.registerCorsConfiguration("/api/resenas/**", configuration);
         return source;
     }
 
-    // --- ARREGLO ---
-    // Solo debe existir UN Bean de SecurityFilterChain.
-    // Este Bean combina la lógica de los dos que tenías.
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // Permitir todas las peticiones OPTIONS (para pre-flight de CORS)
-                        .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
+                        // Permitir todas las peticiones OPTIONS (pre-flight de CORS)
+                        .requestMatchers(HttpMethod.OPTIONS, "/api/resenas/**").permitAll()
 
                         // Rutas públicas de autenticación y versión
                         .requestMatchers("/api/resenas/auth/**").permitAll()
                         .requestMatchers("/api/resenas/version").permitAll()
 
                         // Rutas públicas para LEER (GET) contenido
-                        .requestMatchers(HttpMethod.GET, "/api/peliculas/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/cines/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/resenas/**").permitAll() // Asumiendo que esta será tu ruta
+                        .requestMatchers(HttpMethod.GET, "/api/resenas/peliculas/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/resenas/cines/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/resenas/**").permitAll()
 
                         // El resto de peticiones (POST, PUT, DELETE, etc.) requieren autenticación
                         .anyRequest().authenticated()
@@ -98,7 +95,6 @@ public class SecurityConfig {
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-        // ¡Faltaba esto en tu segundo bean!
         return http.build();
     }
 

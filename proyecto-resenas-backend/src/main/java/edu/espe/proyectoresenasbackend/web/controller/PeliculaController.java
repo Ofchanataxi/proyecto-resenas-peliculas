@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/peliculas") // Esta URL base es correcta
+@RequestMapping("/api/resenas/peliculas") // Esta URL base es correcta
 public class PeliculaController {
 
     private final PeliculaService peliculaService;
