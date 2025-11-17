@@ -2,6 +2,8 @@ package edu.espe.proyectoresenasbackend.dto;
 
 import java.time.LocalDateTime;
 
+// DTO para la respuesta de Resena
+// DTO para la respuesta de Resena
 public class ResenaResponse {
     //Clase para enviar datos de reseñas en respuestas
     private Long id;

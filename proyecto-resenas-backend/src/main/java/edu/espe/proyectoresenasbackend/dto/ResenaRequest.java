@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
+// DTO para la creación o actualización de una reseña
 public class ResenaRequest {
     // Campos necesarios para crear o actualizar una reseña
 
