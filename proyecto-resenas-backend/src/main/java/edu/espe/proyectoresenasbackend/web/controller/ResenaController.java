@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/resenas")
+@RequestMapping("/api/resena/resenas")
 public class ResenaController {
     private final ResenaService service;
 
