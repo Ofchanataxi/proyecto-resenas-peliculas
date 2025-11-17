@@ -84,6 +84,14 @@ public class ResenaServiceImpl implements ResenaService {
         repository.deleteById(id);
     }
 
+    @Override
+    public List<ResenaResponse> listByPeliculaId(Long peliculaId) {
+        // Simplemente busca por el ID de la película y mapea los resultados
+        return repository.findByPeliculaId(peliculaId).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     // ---- MAPPER ----
     private ResenaResponse toResponse(Resena r) {
         ResenaResponse resp = new ResenaResponse();

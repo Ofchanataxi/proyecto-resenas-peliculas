@@ -40,4 +40,9 @@ public class ResenaController {
     public void delete(@PathVariable Long id) {
         service.delete(id);
     }
+
+    @GetMapping("/pelicula/{peliculaId}")
+    public List<ResenaResponse> listByPelicula(@PathVariable Long peliculaId) {
+        return service.listByPeliculaId(peliculaId);
+    }
 }
