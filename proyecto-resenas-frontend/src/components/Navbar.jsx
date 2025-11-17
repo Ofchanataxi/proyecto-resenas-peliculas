@@ -27,29 +27,27 @@ function Navbar() {
                         Cines
                     </NavLink>
                     
-                    {/* FIX ADICIONAL: El backend no envía 'isAdmin'. 
-                      Por ahora, lo quitamos, o deberías añadir lógica de roles en el backend.
-                    */}
-                    {/* {isAuthenticated && user?.isAdmin && ( 
-                        <NavLink to="/usuarios" className={({isActive}) => isActive ? "nav-link active" : "nav-link"}>
-                            Usuarios
-                        </NavLink>
-                    )} */}
-                    
-                    {/* Solución temporal: Mostrar Usuarios si está autenticado (para pruebas) */}
+                    {/* --- INICIO DE LA CORRECCIÓN --- */}
+                    {/* Ahora mostramos todos los enlaces de admin si el usuario está logueado */}
                     {isAuthenticated && (
-                         <NavLink to="/usuarios" className={({isActive}) => isActive ? "nav-link active" : "nav-link"}>
-                            Usuarios
-                        </NavLink>
+                        <>
+                            <NavLink to="/usuarios" className={({isActive}) => isActive ? "nav-link active" : "nav-link"}>
+                                Usuarios
+                            </NavLink>
+                            <NavLink to="/admin/peliculas" className={({isActive}) => isActive ? "nav-link active" : "nav-link"}>
+                                Admin Películas
+                            </NavLink>
+                            <NavLink to="/admin/cines" className={({isActive}) => isActive ? "nav-link active" : "nav-link"}>
+                                Admin Cines
+                            </NavLink>
+                        </>
                     )}
+                    {/* --- FIN DE LA CORRECCIÓN --- */}
                 </div>
 
                 <div className="navbar-auth">
                     {isAuthenticated ? (
                         <>
-                            {/* LA CORRECCIÓN ESTÁ AQUÍ: 
-                              Usamos user?.nombreCompleto y user?.email como respaldo
-                            */}
                             <Link to="/perfil" className="nav-user">
                                 Hola, {user?.nombreCompleto || user?.email}
                             </Link>

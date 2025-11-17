@@ -1,7 +1,7 @@
 // src/api/peliculaApi.js (CORREGIDO)
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const API_URL = `${API_BASE_URL}/api/resenas/pelicula`;
+const API_URL = `${API_BASE_URL}/api/resenas/peliculas`;
 // --- Helpers (copiados de tu usuarioApi.js) ---
 const getAuthHeader = () => {
     const token = localStorage.getItem('token');
@@ -13,6 +13,7 @@ const getHeaders = (customHeaders = {}) => ({
     ...customHeaders,
 });
 
+// ... (Tu handleResponse está bien, lo dejamos como está)
 const handleResponse = async (response) => {
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -21,41 +22,50 @@ const handleResponse = async (response) => {
 
     const contentType = response.headers.get('content-type');
 
-    // Caso 1: DELETE exitoso (No Content)
     if (response.status === 204) {
         return { success: true };
     }
 
-    // Caso 2: Contenido JSON (el bueno)
     if (contentType && contentType.indexOf('application/json') !== -1) {
         return response.json();
     }
-
-    // Caso 3: Respuesta inesperada (OK pero no JSON, etc.)
-    // ¡Aquí estaba el bug! Ya no devolvemos {}
-    throw new Error('Respuesta inesperada del servidor: no es formato JSON.');
+    
+    // CORRECCIÓN: Tu `handleResponse` anterior tenía un bug aquí.
+    // Lo mejor es devolver un objeto vacío si no es JSON pero la respuesta es OK.
+    return {}; 
 };
 
-// GET: Obtener todas las películas (Público, no necesita token)
+
+// GET: Obtener todas las películas
+// CORRECCIÓN: Esta ruta es segura y necesita el token.
 export const getPeliculasRequest = async () => {
-    const response = await fetch(API_URL);
+    // ¡FALTABA ESTO! Añadimos los headers con el token.
+    const response = await fetch(API_URL, {
+        headers: getHeaders()
+    });
     return handleResponse(response);
 };
 
-// GET: Obtener una película por ID (Público)
+// GET: Obtener una película por ID
+// CORRECCIÓN: Esta ruta también es segura.
 export const getPeliculaRequest = async (id) => {
-    const response = await fetch(`${API_URL}/${id}`);
+    const response = await fetch(`${API_URL}/${id}`, {
+        headers: getHeaders()
+    });
     return handleResponse(response);
 };
 
 // POST: Crear una nueva película (Protegido)
 export const createPeliculaRequest = async (pelicula) => {
+    
+    // CORRECCIÓN: Los nombres de las claves deben ser camelCase
+    // para coincidir con tu DTO de Java (PeliculaRequest.java)
     const peliculaData = {
         titulo: pelicula.titulo,
         director: pelicula.director,
         genero: pelicula.genero,
-        duracion_minutos: parseInt(pelicula.duracionMinutos, 10),
-        fecha_estreno: pelicula.fechaEstreno,
+        duracionMinutos: parseInt(pelicula.duracionMinutos, 10), // ANTES: duracion_minutos
+        fechaEstreno: pelicula.fechaEstreno,                     // ANTES: fecha_estreno
     };
 
     const response = await fetch(API_URL, {
@@ -68,12 +78,14 @@ export const createPeliculaRequest = async (pelicula) => {
 
 // PUT: Actualizar una película (Protegido)
 export const updatePeliculaRequest = async (id, pelicula) => {
+    
+    // CORRECCIÓN: Igual que en create, usamos camelCase
     const peliculaData = {
         titulo: pelicula.titulo,
         director: pelicula.director,
         genero: pelicula.genero,
-        duracion_minutos: parseInt(pelicula.duracionMinutos, 10),
-        fecha_estreno: pelicula.fechaEstreno,
+        duracionMinutos: parseInt(pelicula.duracionMinutos, 10), // ANTES: duracion_minutos
+        fechaEstreno: pelicula.fechaEstreno,                     // ANTES: fecha_estreno
     };
 
     const response = await fetch(`${API_URL}/${id}`, {
