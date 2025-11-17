@@ -14,7 +14,7 @@ import UsuariosPage from './pages/UsuariosPage'; // Admin
 // --- NUEVAS PÁGINAS (Debemos importarlas) ---
 import PeliculaDetallePage from './pages/PeliculaDetallePage'; // Nueva
 import CinesPage from './pages/CinesPage';
-import HomePage from "./pages/homePage"; // Nueva
+import HomePage from "./pages/HomePage"; // Nueva
 
 function App() {
     return (
