@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
 public class ResenaRequest {
+    // Campos necesarios para crear o actualizar una reseña
 
     private String comentario;
 

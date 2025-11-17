@@ -3,6 +3,7 @@ package edu.espe.proyectoresenasbackend.dto;
 import java.time.LocalDateTime;
 
 public class ResenaResponse {
+    //Clase para enviar datos de reseñas en respuestas
     private Long id;
     private String comentario;
     private Integer calificacion;

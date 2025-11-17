@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public class UsuarioRequestData {
+    //Usuarios
     @NotBlank @Size(min = 3, max=120)
     private String nombreCompleto;
 
