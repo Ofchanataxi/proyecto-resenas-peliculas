@@ -107,7 +107,7 @@ function UsuariosPage() {
         <div style={{ padding: '20px' }}>
             <h2>Gestión de Usuarios</h2>
 
-            {/* Mostramos estadísticas si existen */}
+            {/* Mostramos estadísticas */}
             {stats && (
                 <div style={{ padding: '10px', backgroundColor: '#f4f4f4', marginBottom: '20px' }}>
                     <strong>Estadísticas:</strong> Total: {stats.total} | Activos: {stats.active} | Inactivos: {stats.inactive}
