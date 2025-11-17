@@ -28,14 +28,14 @@ const handleResponse = async (response) => {
 // Asumimos que tu backend soporta esto (ej: /reseñas/pelicula/1)
 // Si no, tendremos que filtrar en el frontend.
 export const getResenasPorPeliculaRequest = async (peliculaId) => {
-    const response = await fetch(`${API_URL}/pelicula/${peliculaId}`);
+    const response = await fetch(`${API_URL}/peliculas/${peliculaId}`);
     return handleResponse(response);
 };
 
 // POST: Crear una nueva reseña (Protegido)
 export const createResenaRequest = async (resenaData) => {
     // resenaData debe ser { comentario, calificacion, usuarioId, peliculaId }
-    const response = await fetch(API_URL, {
+    const response = await fetch(`${API_URL}/resena`, {
         method: 'POST',
         headers: getHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(resenaData),
@@ -45,7 +45,7 @@ export const createResenaRequest = async (resenaData) => {
 
 // PUT: Actualizar una reseña (Protegido)
 export const updateResenaRequest = async (id, resenaData) => {
-    const response = await fetch(`${API_URL}/${id}`, {
+    const response = await fetch(`${API_URL}/resena/${id}`, {
         method: 'PUT',
         headers: getHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(resenaData),
@@ -55,7 +55,7 @@ export const updateResenaRequest = async (id, resenaData) => {
 
 // DELETE: Borrar una reseña (Protegido)
 export const deleteResenaRequest = async (id) => {
-    const response = await fetch(`${API_URL}/${id}`, {
+    const response = await fetch(`${API_URL}/resena/${id}`, {
         method: 'DELETE',
         headers: getHeaders(),
     });
