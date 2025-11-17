@@ -2,7 +2,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // URL base para la autenticación
-const AUTH_URL = `${API_BASE_URL}/auth`; // <-- CAMBIO AQUÍ
+const AUTH_URL = `${API_BASE_URL}/api/resenas/auth`; // <-- CAMBIO AQUÍ
 
 
 const handleResponse = async (response) => {
