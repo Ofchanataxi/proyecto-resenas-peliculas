@@ -1,6 +1,6 @@
 // API para Cines
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const API_URL = `${API_BASE_URL}/cines`;
+const API_URL = `${API_BASE_URL}/api/resenas/cines`;
 
 // --- Helpers (copiados de tu usuarioApi.js) ---
 const getAuthHeader = () => {
@@ -14,12 +14,23 @@ const getHeaders = (customHeaders = {}) => ({
 const handleResponse = async (response) => {
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Error ${response.status}`);
+        // Lanza un error con el mensaje del backend
+        const error = new Error(errorData.message || `Error ${response.status}`);
+        error.data = errorData;
+        error.status = response.status;
+        throw error;
     }
+    
+    // Manejar respuesta 204 No Content (para DELETE)
+    if (response.status === 204) {
+        return { success: true };
+    }
+
     const contentType = response.headers.get('content-type');
     if (contentType && contentType.indexOf('application/json') !== -1) {
         return response.json();
     }
+    // Si la respuesta es OK pero no es JSON (raro, pero posible)
     return {};
 };
 // --- ---

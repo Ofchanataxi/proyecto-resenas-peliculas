@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import './Navbar.css'; // <-- Importamos el nuevo CSS
+import './Navbar.css'; 
 
 function Navbar() {
     const { isAuthenticated, user, logout } = useAuth();
@@ -26,8 +26,19 @@ function Navbar() {
                     <NavLink to="/cines" className={({isActive}) => isActive ? "nav-link active" : "nav-link"}>
                         Cines
                     </NavLink>
-                    {isAuthenticated && user?.isAdmin && ( // Asumimos que el user tiene un flag 'isAdmin'
+                    
+                    {/* FIX ADICIONAL: El backend no envía 'isAdmin'. 
+                      Por ahora, lo quitamos, o deberías añadir lógica de roles en el backend.
+                    */}
+                    {/* {isAuthenticated && user?.isAdmin && ( 
                         <NavLink to="/usuarios" className={({isActive}) => isActive ? "nav-link active" : "nav-link"}>
+                            Usuarios
+                        </NavLink>
+                    )} */}
+                    
+                    {/* Solución temporal: Mostrar Usuarios si está autenticado (para pruebas) */}
+                    {isAuthenticated && (
+                         <NavLink to="/usuarios" className={({isActive}) => isActive ? "nav-link active" : "nav-link"}>
                             Usuarios
                         </NavLink>
                     )}
@@ -36,8 +47,11 @@ function Navbar() {
                 <div className="navbar-auth">
                     {isAuthenticated ? (
                         <>
+                            {/* LA CORRECCIÓN ESTÁ AQUÍ: 
+                              Usamos user?.nombreCompleto y user?.email como respaldo
+                            */}
                             <Link to="/perfil" className="nav-user">
-                                Hola, {user.nombreCompleto}
+                                Hola, {user?.nombreCompleto || user?.email}
                             </Link>
                             <button onClick={handleLogout} className="nav-button-logout">
                                 Cerrar Sesión
@@ -58,7 +72,5 @@ function Navbar() {
         </nav>
     );
 }
-
-
 
 export default Navbar;
