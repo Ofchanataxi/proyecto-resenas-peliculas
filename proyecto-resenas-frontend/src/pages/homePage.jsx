@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { getPeliculasRequest } from '../api/peliculaApi';
-import PeliculaList from '../components/PeliculaList';
+import PeliculaList from '../components/peliculaList';
 
 function HomePage() {
     const [peliculas, setPeliculas] = useState([]);
