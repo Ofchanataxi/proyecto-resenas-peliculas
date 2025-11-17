@@ -8,13 +8,12 @@ on:
     branches:
       - main
   
-  # Permite ejecutarlo manualmente
-  workflow_dispatch: 
+
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - name: Checkout code
@@ -32,9 +31,9 @@ jobs:
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
           echo "COMMIT_HASH=$COMMIT_HASH" >> $GITHUB_ENV
           
-          echo "📦 Version: $APP_VERSION"
-          echo "🔢 Build Number: $BUILD_NUMBER"
-          echo "🔗 Commit: ${COMMIT_HASH:0:7}"
+          echo "Version: $APP_VERSION"
+          echo "Build Number: $BUILD_NUMBER"
+          echo "Commit: ${COMMIT_HASH:0:7}"
 
       - name: Update Render Environment Variables
         id: update-env
@@ -57,7 +56,6 @@ jobs:
               }
             }')
 
-          echo "Payload: $JSON_PAYLOAD"
 
           RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X PATCH \
             "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}" \
@@ -73,13 +71,11 @@ jobs:
             echo "$RESPONSE" | sed '/HTTP_CODE/d'
             exit 1
           fi
-          
-          echo "✅ Render environment variables updated."
 
       - name: Trigger Render Deploy
         id: trigger-deploy # Mantenemos el id
         run: |
-          echo "🚀 Triggering deployment to Render..."
+          echo "Triggering deployment to Render..."
           
           # Capturamos la respuesta COMPLETA
           RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}")
@@ -87,7 +83,7 @@ jobs:
           BODY=$(echo "$RESPONSE" | sed '/HTTP_CODE/d') # Obtenemos el cuerpo del JSON
 
           if [ "$HTTP_CODE" -ne 200 ] && [ "$HTTP_CODE" -ne 201 ]; then
-            echo "❌ Failed to trigger deploy. HTTP Code: $HTTP_CODE"
+            echo "Failed to trigger deploy. HTTP Code: $HTTP_CODE"
             echo "$BODY"
             exit 1
           fi
@@ -96,19 +92,19 @@ jobs:
           DEPLOY_ID=$(echo "$BODY" | jq -r '.deploy.id')
           
           if [ -z "$DEPLOY_ID" ] || [ "$DEPLOY_ID" == "null" ]; then
-            echo "❌ Could not parse deploy ID from Render's response."
+            echo "Could not parse deploy ID from Render's response."
             echo "$BODY"
             exit 1
           fi
           
-          echo "✅ Deploy webhook triggered successfully. New deploy ID: $DEPLOY_ID"
+          echo "Deploy webhook triggered successfully. New deploy ID: $DEPLOY_ID"
           # Pasamos el ID al siguiente paso
           echo "deploy_id=$DEPLOY_ID" >> $GITHUB_OUTPUT
           
       - name: Monitor deployment status
         id: monitor-deploy
         run: |
-          echo "🔍 Monitoring deployment ID: ${{ steps.trigger-deploy.outputs.deploy_id }}"
+          echo "Monitoring deployment ID: ${{ steps.trigger-deploy.outputs.deploy_id }}"
           
           DEPLOY_ID=${{ steps.trigger-deploy.outputs.deploy_id }}
           MAX_ATTEMPTS=20
@@ -128,7 +124,7 @@ jobs:
             CREATED_AT=$(echo "$RESPONSE" | jq -r '.createdAt // "unknown"')
             COMMIT_MSG=$(echo "$RESPONSE" | jq -r '.commit.message // "unknown"')
           
-            echo "🔄 Attempt $ATTEMPT/$MAX_ATTEMPTS"
+            echo "Attempt $ATTEMPT/$MAX_ATTEMPTS"
             echo "   Deploy ID: $LATEST_ID"
             echo "   Status: $LATEST_STATUS"
             echo "   Commit: $COMMIT_MSG"
@@ -136,7 +132,7 @@ jobs:
           
             # Verificar estados finales exitosos
             if [ "$LATEST_STATUS" == "live" ]; then
-              echo "✅ Deployment successful!"
+              echo "Deployment successful!"
               echo "deploy_status=success" >> $GITHUB_OUTPUT
               echo "deploy_id=$LATEST_ID" >> $GITHUB_OUTPUT
               exit 0
@@ -146,7 +142,7 @@ jobs:
             if [ "$LATEST_STATUS" == "build_failed" ] || \
                [ "$LATEST_STATUS" == "canceled" ] || \
                [ "$LATEST_STATUS" == "deactivated" ]; then
-              echo "❌ Deployment failed with status: $LATEST_STATUS"
+              echo "Deployment failed with status: $LATEST_STATUS"
               echo "deploy_status=failed" >> $GITHUB_OUTPUT
               echo "deploy_id=$LATEST_ID" >> $GITHUB_OUTPUT
               exit 1
@@ -157,17 +153,17 @@ jobs:
                [ "$LATEST_STATUS" == "deploying" ] || \
                [ "$LATEST_STATUS" == "pre_deploy" ] || \
                [ "$LATEST_STATUS" == "created" ]; then
-              echo "⏳ Still deploying... waiting 30 seconds"
+              echo "Still deploying... waiting 30 seconds"
               sleep 30
               continue
             fi
           
             # Estado desconocido
-            echo "⚠️ Unknown status: $LATEST_STATUS"
+            echo "Unknown status: $LATEST_STATUS"
             sleep 30
           done
           
           # Timeout
-          echo "⏰ Deployment monitoring timeout"
+          echo "Deployment monitoring timeout"
           echo "deploy_status=timeout" >> $GITHUB_OUTPUT
           exit 1

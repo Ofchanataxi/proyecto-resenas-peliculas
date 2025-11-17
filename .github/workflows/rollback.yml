@@ -16,13 +16,13 @@ jobs:
     steps:
       - name: Notify deployment failure
         run: |
-          echo "⚠️ Deployment to Render failed!"
-          echo "🔄 Initiating automatic rollback..."
+          echo "Deployment to Render failed!"
+          echo "Initiating automatic rollback..."
 
       - name: Get last successful deploy
         id: get-deploy
         run: |
-          echo "🔍 Searching for last successful deployment..."
+          echo "Searching for last successful deployment..."
           
           DEPLOYS=$(curl -s -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys?limit=10")
@@ -31,27 +31,27 @@ jobs:
           LAST_SUCCESS=$(echo "$DEPLOYS" | jq -r '[.[] | select(.deploy.status=="live")][0].deploy.id')
           
           if [ "$LAST_SUCCESS" == "null" ] || [ -z "$LAST_SUCCESS" ]; then
-            echo "❌ No previous successful deployment found"
+            echo "No previous successful deployment found"
             echo "Cannot perform automatic rollback"
           
             # (Mejora del ejemplo) Mostrar los últimos deploys para diagnóstico
-            echo "📋 Recent deployments:"
+            echo "Recent deployments:"
             echo "$DEPLOYS" | jq -r '.[] | .deploy | "\(.id) - \(.status) - \(.commit.message // "N/A")"'
             exit 1
           fi
           
-          echo "✅ Found last successful deployment: $LAST_SUCCESS"
+          echo "Found last successful deployment: $LAST_SUCCESS"
           
           # (Mejora del ejemplo) Mostrar info del deploy al que se hará rollback
           DEPLOY_INFO=$(echo "$DEPLOYS" | jq -r "[.[] | select(.deploy.id==\"$LAST_SUCCESS\")][0].deploy")
-          echo "📋 Rollback target:"
+          echo "Rollback target:"
           echo "$DEPLOY_INFO" | jq '{id, status, commit: .commit.message, createdAt}'
           
           echo "deploy_id=$LAST_SUCCESS" >> $GITHUB_OUTPUT
 
       - name: Execute rollback
         run: |
-          echo "🔄 Executing rollback to deployment: ${{ steps.get-deploy.outputs.deploy_id }}"
+          echo "Executing rollback to deployment: ${{ steps.get-deploy.outputs.deploy_id }}"
           
           RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
@@ -66,17 +66,17 @@ jobs:
           echo "Response: $BODY"
           
           if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-            echo "✅ Rollback initiated successfully"
+            echo "Rollback initiated successfully"
           else
-            echo "⚠️ Rollback request completed with status: $HTTP_CODE"
+            echo "Rollback request completed with status: $HTTP_CODE"
           fi
 
       - name: Wait and verify rollback
         run: |
-          echo "⏳ Waiting 60 seconds for rollback to process..."
+          echo "Waiting 60 seconds for rollback to process..."
           sleep 60
           
-          echo "🔍 Verifying rollback status..."
+          echo "Verifying rollback status..."
           DEPLOYS=$(curl -s -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys?limit=1")
           
@@ -88,19 +88,7 @@ jobs:
           echo "  Status: $CURRENT_STATUS"
           
           if [ "$CURRENT_STATUS" == "live" ]; then
-            echo "✅ Service is live after rollback"
+            echo "Service is live after rollback"
           else
-            echo "⚠️ Service status: $CURRENT_STATUS"
+            echo "Service status: $CURRENT_STATUS"
           fi
-
-      - name: Rollback summary
-        run: |
-          echo "### 🔄 Automatic Rollback Executed" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Reason:** Deployment failed" >> $GITHUB_STEP_SUMMARY
-          echo "- **Rolled back to:** \`${{ steps.get-deploy.outputs.deploy_id }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Executed by:** GitHub Actions (automatic)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Time:** $(date -u)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Service has been restored to last working version" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 Check status: https://dashboard.render.com" >> $GITHUB_STEP_SUMMARY
