@@ -4,7 +4,7 @@ import App from './App.jsx'
 import './index.css' // <--- ¡¡AÑADE ESTA LÍNEA!!
 import { AuthProvider } from './context/AuthContext.jsx'
 import { BrowserRouter } from 'react-router-dom'
-
+//hola
 ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
         <AuthProvider>
