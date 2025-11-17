@@ -40,14 +40,8 @@ function App() {
 
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
+                    <Route path="/perfil" element={<ProfilePage />} />
 
-                    {/* --- Rutas Protegidas (Usuario logueado) --- */}
-                    <Route element={<ProtectedRoute />}>
-                        <Route path="/perfil" element={<ProfilePage />} />
-                        {/* Nota: Crear/editar reseñas se manejará dentro
-              de PeliculaDetallePage, verificando al usuario.
-            */}
-                    </Route>
                 </Routes>
             </main>
         </div>

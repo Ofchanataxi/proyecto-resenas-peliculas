@@ -14,16 +14,28 @@ const getHeaders = (customHeaders = {}) => ({
 const handleResponse = async (response) => {
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+
+        // --- INICIO DE LA VALIDACIÓN ---
+        // Verificamos si el mensaje de error contiene el texto de la violación de restricción
+        if (errorData.message && errorData.message.includes("constraint violation")) {
+            throw new Error("No se puede eliminar: la película tiene reseñas asociadas.");
+        }
+        // --- FIN DE LA VALIDACIÓN ---
+
         throw new Error(errorData.message || `Error ${response.status}`);
     }
+
     const contentType = response.headers.get('content-type');
+
     if (response.status === 204) {
         return { success: true };
     }
+
     if (contentType && contentType.indexOf('application/json') !== -1) {
         return response.json();
     }
-    return {};
+    
+    return {}; 
 };
 
 
