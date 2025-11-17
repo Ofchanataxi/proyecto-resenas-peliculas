@@ -86,7 +86,7 @@ class PeliculaControllerTest {
     void create_ShouldReturnPeliculaResponse_WhenValidRequest() throws Exception {
         when(peliculaService.create(any(PeliculaRequest.class))).thenReturn(peliculaResponse);
 
-        mockMvc.perform(post("/api/resenas/pelicula")
+        mockMvc.perform(post("/api/resenas/peliculas")
                         .header("Authorization", jwtToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(peliculaRequest)))
@@ -103,7 +103,7 @@ class PeliculaControllerTest {
     void get_ShouldReturnPelicula_WhenIdExists() throws Exception {
         when(peliculaService.get(1L)).thenReturn(peliculaResponse);
 
-        mockMvc.perform(get("/api/resenas/pelicula/1")
+        mockMvc.perform(get("/api/resenas/peliculas/1")
                         .header("Authorization", jwtToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
@@ -147,7 +147,7 @@ class PeliculaControllerTest {
 
         when(peliculaService.update(eq(1L), any(PeliculaRequest.class))).thenReturn(updatedPelicula);
 
-        mockMvc.perform(put("/api/resenas/pelicula/1")
+        mockMvc.perform(put("/api/resenas/peliculas/1")
                         .header("Authorization", jwtToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(peliculaRequest)))
@@ -162,7 +162,7 @@ class PeliculaControllerTest {
     void delete_ShouldCallService_WhenValidId() throws Exception {
         doNothing().when(peliculaService).delete(1L);
 
-        mockMvc.perform(delete("/api/resenas/pelicula/1")
+        mockMvc.perform(delete("/api/resenas/peliculas/1")
                         .header("Authorization", jwtToken))
                 .andExpect(status().isOk());
 
@@ -171,7 +171,7 @@ class PeliculaControllerTest {
 
     @Test
     void create_ShouldReturnForbidden_WhenNoToken() throws Exception {
-        mockMvc.perform(post("/api/resenas/pelicula")
+        mockMvc.perform(post("/api/resenas/peliculas")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(peliculaRequest)))
                 .andExpect(status().isForbidden());
@@ -183,7 +183,7 @@ class PeliculaControllerTest {
     void get_ShouldReturnNotFound_WhenPeliculaDoesNotExist() throws Exception {
         when(peliculaService.get(999L)).thenThrow(new RuntimeException("Película no encontrada"));
 
-        mockMvc.perform(get("/api/resenas/pelicula/999")
+        mockMvc.perform(get("/api/resenas/peliculas/999")
                         .header("Authorization", jwtToken))
                 .andExpect(status().is5xxServerError());
 
