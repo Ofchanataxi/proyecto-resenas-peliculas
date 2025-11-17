@@ -64,7 +64,7 @@ public class SecurityConfig {
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        source.registerCorsConfiguration("/api/**", configuration);
         return source;
     }
 
@@ -75,19 +75,12 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
 
-                        // --- ¡ESTA ES LA LÍNEA CRÍTICA QUE FALTA! ---
-                        // Permite todas las peticiones OPTIONS de pre-vuelo
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        // --- FIN DE LA LÍNEA ---
+
+                        .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
 
                         // Rutas públicas
                         .requestMatchers("/api/resenas/auth/**").permitAll()
                         .requestMatchers("/api/resenas/version").permitAll()
-                        .requestMatchers("/api/peliculas/**").permitAll()
-                        .requestMatchers("/api/cines/**").permitAll()
-                        .requestMatchers("/api/usuarios/**").permitAll()
-                        .requestMatchers("/api/resenas/**").permitAll()
-
 
                         // El resto requiere autenticación
                         .anyRequest().authenticated()
@@ -99,4 +92,27 @@ public class SecurityConfig {
 
         return http.build();
     }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth
+
+                        .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
+
+                        // Rutas públicas
+                        .requestMatchers("/api/resenas/auth/**").permitAll()
+                        .requestMatchers("/api/resenas/version").permitAll()
+
+
+                        .requestMatchers(HttpMethod.GET, "/api/peliculas/**", "/api/cines/**", "/api/resenas/**").permitAll()
+
+                        .anyRequest().authenticated()
+                )
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authenticationProvider(authenticationProvider())
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 }

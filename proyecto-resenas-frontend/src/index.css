@@ -1,68 +1,131 @@
+/* src/index.css (Versión Limpia y Correcta) */
+
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    line-height: 1.6;
+    font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+    color-scheme: dark; /* Forzamos el modo oscuro */
+    color: rgba(255, 255, 255, 0.87);
+    background-color: #1a1a1a; /* Fondo oscuro principal */
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
+    /* Variables de color */
+    --color-primario: #646cff;
+    --color-primario-hover: #535bf2;
+    --color-fondo: #1a1a1a;
+    --color-fondo-secundario: #242424;
+    --color-superficie: #2f2f2f; /* Para tarjetas y formularios */
+    --color-texto: rgba(255, 255, 255, 0.87);
+    --color-texto-secundario: rgba(255, 255, 255, 0.6);
+    --color-borde: #444;
+    --color-error: #ff6b6b;
+    --color-exito: #51cf66;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+/* Reset simple */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+    min-width: 320px;
+    min-height: 100vh;
+    background-color: var(--color-fondo);
+    color: var(--color-texto);
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+#root {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    text-align: left;
+}
+
+/* Estilos globales de Formulario */
+h1, h2, h3 {
+    margin-bottom: 1rem;
+    font-weight: 600;
+    color: var(--color-texto);
+}
+
+h1 { font-size: 2.5em; line-height: 1.1; }
+h2 { font-size: 2em; }
+h3 { font-size: 1.5em; }
+
+p {
+    color: var(--color-texto-secundario);
+    margin-bottom: 1rem;
+}
+
+a {
+    font-weight: 500;
+    color: var(--color-primario);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+a:hover {
+    color: var(--color-primario-hover);
 }
 
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    padding: 0.6em 1.2em;
+    font-size: 1em;
+    font-weight: 500;
+    font-family: inherit;
+    background-color: var(--color-primario);
+    color: white;
+    cursor: pointer;
+    transition: border-color 0.25s, background-color 0.25s;
 }
 button:hover {
-  border-color: #646cff;
+    background-color: var(--color-primario-hover);
 }
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+button:disabled {
+    background-color: var(--color-fondo-secundario);
+    color: var(--color-texto-secundario);
+    cursor: not-allowed;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+input[type="text"],
+input[type="email"],
+input[type="password"],
+textarea {
+    width: 100%;
+    padding: 0.8em 1em;
+    margin-bottom: 1rem;
+    background-color: var(--color-fondo-secundario);
+    border: 1px solid var(--color-borde);
+    border-radius: 8px;
+    color: var(--color-texto);
+    font-size: 1em;
+}
+input:focus, textarea:focus {
+    outline: none;
+    border-color: var(--color-primario);
+    box-shadow: 0 0 0 2px var(--color-primario-hover);
+}
+
+form {
+    background-color: var(--color-superficie);
+    padding: 2rem;
+    border-radius: 12px;
+    max-width: 500px;
+    margin: 1rem auto;
+}
+form div {
+    margin-bottom: 1rem;
+}
+form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
 }

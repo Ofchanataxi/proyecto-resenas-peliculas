@@ -1,0 +1,103 @@
+.detalle-container {
+    max-width: 900px;
+    margin: 0 auto 3rem auto;
+}
+
+.detalle-header {
+    padding: 2rem;
+    background-color: var(--color-superficie);
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    border: 1px solid var(--color-borde);
+}
+
+.detalle-header h1 {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+}
+
+.detalle-info {
+    font-size: 1.1rem;
+    color: var(--color-texto-secundario);
+    margin-bottom: 0.25rem;
+}
+
+.reseñas-section h2 {
+    font-size: 2rem;
+    border-bottom: 2px solid var(--color-primario);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.resena-form {
+    background-color: transparent; /* Ya tiene fondo global */
+    padding: 0;
+    max-width: none;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--color-borde);
+    padding-bottom: 2rem;
+}
+
+.star-rating {
+    margin-bottom: 1rem;
+}
+
+.star {
+    font-size: 2rem;
+    color: var(--color-texto-secundario);
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.star:hover,
+.star.active {
+    color: #f5c518; /* Color estrella de IMDb */
+}
+
+.error-msg {
+    color: var(--color-error);
+    margin-top: 1rem;
+}
+
+.resena-login-prompt {
+    text-align: center;
+    padding: 2rem;
+    background-color: var(--color-superficie);
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.resena-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.resena-card {
+    background-color: var(--color-superficie);
+    border: 1px solid var(--color-borde);
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.resena-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.resena-card-header strong {
+    font-size: 1.1rem;
+    color: var(--color-texto);
+}
+
+.resena-calificacion {
+    font-size: 1.1rem;
+    color: #f5c518;
+}
+
+.resena-card p {
+    color: var(--color-texto-secundario);
+    font-style: italic;
+    margin-bottom: 0;
+}

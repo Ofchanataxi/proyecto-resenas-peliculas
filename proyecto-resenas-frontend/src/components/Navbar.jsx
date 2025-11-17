@@ -1,6 +1,7 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import './Navbar.css'; // <-- Importamos el nuevo CSS
 
 function Navbar() {
     const { isAuthenticated, user, logout } = useAuth();
@@ -12,23 +13,52 @@ function Navbar() {
     };
 
     return (
-        <nav style={{ display: 'flex', gap: '1rem', padding: '1rem', background: '#333' }}>
-            <Link to="/">Inicio</Link>
-            
-            {isAuthenticated ? (
-                <>
-                    <Link to="/usuarios">Usuarios (Admin)</Link>
-                    <Link to="/perfil">Mi Perfil ({user.nombreCompleto})</Link>
-                    <button onClick={handleLogout}>Cerrar Sesión</button>
-                </>
-            ) : (
-                <>
-                    <Link to="/login">Iniciar Sesión</Link>
-                    <Link to="/register">Registrarse</Link>
-                </>
-            )}
+        <nav className="navbar">
+            <div className="navbar-container">
+                <Link to="/" className="navbar-logo">
+                    🎬 CineReseñas
+                </Link>
+
+                <div className="navbar-links">
+                    <NavLink to="/" className={({isActive}) => isActive ? "nav-link active" : "nav-link"}>
+                        Películas
+                    </NavLink>
+                    <NavLink to="/cines" className={({isActive}) => isActive ? "nav-link active" : "nav-link"}>
+                        Cines
+                    </NavLink>
+                    {isAuthenticated && user?.isAdmin && ( // Asumimos que el user tiene un flag 'isAdmin'
+                        <NavLink to="/usuarios" className={({isActive}) => isActive ? "nav-link active" : "nav-link"}>
+                            Usuarios
+                        </NavLink>
+                    )}
+                </div>
+
+                <div className="navbar-auth">
+                    {isAuthenticated ? (
+                        <>
+                            <Link to="/perfil" className="nav-user">
+                                Hola, {user.nombreCompleto}
+                            </Link>
+                            <button onClick={handleLogout} className="nav-button-logout">
+                                Cerrar Sesión
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <Link to="/login" className="nav-button">
+                                Iniciar Sesión
+                            </Link>
+                            <Link to="/register" className="nav-button-primary">
+                                Registrarse
+                            </Link>
+                        </>
+                    )}
+                </div>
+            </div>
         </nav>
     );
 }
+
+
 
 export default Navbar;
