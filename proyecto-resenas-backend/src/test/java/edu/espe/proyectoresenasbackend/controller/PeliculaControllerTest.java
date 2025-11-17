@@ -125,7 +125,7 @@ class PeliculaControllerTest {
         List<PeliculaResponse> peliculas = Arrays.asList(peliculaResponse, pelicula2);
         when(peliculaService.list()).thenReturn(peliculas);
 
-        mockMvc.perform(get("/api/resenas/pelicula")
+        mockMvc.perform(get("/api/resenas/peliculas")
                         .header("Authorization", jwtToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
