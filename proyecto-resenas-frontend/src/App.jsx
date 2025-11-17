@@ -15,6 +15,8 @@ import UsuariosPage from './pages/UsuariosPage'; // Admin
 import PeliculaDetallePage from './pages/PeliculaDetallePage'; // Nueva
 import CinesPage from './pages/CinesPage';
 import HomePage from "./pages/homePage"; // Nueva
+import AdminPeliculasPage from './pages/AdminPeliculasPage';
+import AdminCinesPage from './pages/AdminCinesPage';
 
 function App() {
     return (
@@ -48,7 +50,8 @@ function App() {
                     {/* Asumimos que ProtectedRoute podría checar roles a futuro */}
                     <Route element={<ProtectedRoute />}>
                         <Route path="/usuarios" element={<UsuariosPage />} />
-                        {/* Aquí irían las rutas de /admin/peliculas/crear, etc. */}
+                        <Route path="/admin/peliculas" element={<AdminPeliculasPage />} />
+                        <Route path="/admin/cines" element={<AdminCinesPage />} />
                     </Route>
                 </Routes>
             </main>

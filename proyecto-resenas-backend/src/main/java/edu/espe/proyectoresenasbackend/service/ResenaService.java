@@ -15,4 +15,6 @@ public interface ResenaService {
     ResenaResponse update(Long id, ResenaRequest request);
 
     void delete(Long id);
+
+    List<ResenaResponse> listByPeliculaId(Long peliculaId);
 }

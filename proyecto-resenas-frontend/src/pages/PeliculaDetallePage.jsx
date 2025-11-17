@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getPeliculaRequest } from '../api/peliculaApi';
-import { getResenasPorPeliculaRequest, createResenaRequest } from '../api/resenaApi';
-import './PeliculaDetallePage.css'; // Estilos para esta página
+import { getResenasPorPeliculaRequest, createResenaRequest, deleteResenaRequest } from '../api/resenaApi';
+import './PeliculaDetallePage.css';
 
 function PeliculaDetallePage() {
     const { id } = useParams(); // Obtiene el 'id' de la URL
@@ -18,6 +18,19 @@ function PeliculaDetallePage() {
     const [comentario, setComentario] = useState('');
     const [calificacion, setCalificacion] = useState(0);
     const [formError, setFormError] = useState(null);
+
+    const handleResenaDelete = async (resenaId) => {
+        if (window.confirm("¿Estás seguro de que quieres eliminar esta reseña?")) {
+            try {
+                await deleteResenaRequest(resenaId);
+                // Actualiza el estado local para quitar la reseña eliminada
+                setReseñas(reseñas.filter(r => r.id !== resenaId));
+                alert("Reseña eliminada.");
+            } catch (err) {
+                alert(`Error al eliminar: ${err.message}`);
+            }
+        }
+    };
 
     // Carga los datos de la película y las reseñas
     const cargarDatos = async () => {
@@ -149,7 +162,19 @@ function PeliculaDetallePage() {
                     </span>
                                     </div>
                                     <p>{resena.comentario}</p>
-                                    {/* Aquí podrías agregar botones de editar/borrar si resena.usuarioId === user.id */}
+                                    {/* --- AÑADIR ESTA LÓGICA --- */}
+                                    {/* Mostrar botones si el usuario es dueño de la reseña */}
+                                    {isAuthenticated && user?.id === resena.usuarioId && (
+                                        <div className="resena-actions" style={{marginTop: '10px'}}>
+                                            {/* (Aquí podrías poner un botón de Editar) */}
+                                            <button 
+                                                onClick={() => handleResenaDelete(resena.id)}
+                                                style={{backgroundColor: '#8B0000', color: 'white', fontSize: '0.8em'}}
+                                            >
+                                                Eliminar
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             ))
                         ) : (
