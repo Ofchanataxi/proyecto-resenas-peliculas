@@ -1,7 +1,7 @@
 // src/api/peliculaApi.js (CORREGIDO)
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const API_URL = `${API_BASE_URL}/api/peliculas`;
+const API_URL = `${API_BASE_URL}/api/resenas/peliculas`;
 // --- Helpers (copiados de tu usuarioApi.js) ---
 const getAuthHeader = () => {
     const token = localStorage.getItem('token');

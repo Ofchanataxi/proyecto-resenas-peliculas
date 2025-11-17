@@ -1,6 +1,6 @@
 // API para Cines
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const API_URL = `${API_BASE_URL}/api/cines`;
+const API_URL = `${API_BASE_URL}/api/resenas/cines`;
 
 // --- Helpers (copiados de tu usuarioApi.js) ---
 const getAuthHeader = () => {
