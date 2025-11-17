@@ -1,6 +1,7 @@
 package edu.espe.proyectoresenasbackend.dto;
 
 public class CineResponse {
+    //Se crea la clase CineResponse con sus atributos y métodos getters y setters
     private Long id;
     private String nombre;
     private String direccion;
