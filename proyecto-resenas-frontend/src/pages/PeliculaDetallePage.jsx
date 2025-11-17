@@ -76,7 +76,14 @@ function PeliculaDetallePage() {
             const res = await createResenaRequest(nuevaResena);
 
             // Actualiza la lista de reseñas al instante
-            setReseñas([res, ...reseñas]);
+            // CORRECCIÓN: El backend ahora devuelve la reseña completa,
+            // pero si no devuelve el nombre del usuario, lo simulamos.
+            const resenaConNombre = {
+                ...res,
+                usuarioNombre: user.nombreCompleto // Añade el nombre del usuario actual
+            };
+            setReseñas([resenaConNombre, ...reseñas]);
+
 
             // Limpia el formulario
             setComentario('');
@@ -152,31 +159,37 @@ function PeliculaDetallePage() {
                     {/* Lista de Reseñas */}
                     <div className="resena-list">
                         {reseñas.length > 0 ? (
-                            reseñas.map((resena) => (
-                                <div key={resena.id} className="resena-card">
-                                    <div className="resena-card-header">
-                                        <strong>{resena.usuarioNombre || 'Anónimo'}</strong> {/* (El backend debería enviar esto) */}
-                                        <span className="resena-calificacion">
-                      {'★'.repeat(resena.calificacion)}
-                                            {'☆'.repeat(5 - resena.calificacion)}
-                    </span>
-                                    </div>
-                                    <p>{resena.comentario}</p>
-                                    {/* --- AÑADIR ESTA LÓGICA --- */}
-                                    {/* Mostrar botones si el usuario es dueño de la reseña */}
-                                    {isAuthenticated && user?.id === resena.usuarioId && (
-                                        <div className="resena-actions" style={{marginTop: '10px'}}>
-                                            {/* (Aquí podrías poner un botón de Editar) */}
-                                            <button 
-                                                onClick={() => handleResenaDelete(resena.id)}
-                                                style={{backgroundColor: '#8B0000', color: 'white', fontSize: '0.8em'}}
-                                            >
-                                                Eliminar
-                                            </button>
+                            reseñas.map((resena) => {
+                                // --- INICIO DE LA CORRECCIÓN ---
+                                // Aseguramos que la calificación esté entre 0 y 5
+                                const calificacionSegura = Math.max(0, Math.min(5, resena.calificacion || 0));
+                                // --- FIN DE LA CORRECCIÓN ---
+
+                                return (
+                                    <div key={resena.id} className="resena-card">
+                                        <div className="resena-card-header">
+                                            <strong>{resena.usuarioNombre || 'Anónimo'}</strong>
+                                            <span className="resena-calificacion">
+                                                {/* Usamos la calificación segura */}
+                                                {'★'.repeat(calificacionSegura)}
+                                                {'☆'.repeat(5 - calificacionSegura)}
+                                            </span>
                                         </div>
-                                    )}
-                                </div>
-                            ))
+                                        <p>{resena.comentario}</p>
+                                        {/* Mostrar botones si el usuario es dueño de la reseña */}
+                                        {isAuthenticated && user?.id === resena.usuarioId && (
+                                            <div className="resena-actions" style={{marginTop: '10px'}}>
+                                                <button 
+                                                    onClick={() => handleResenaDelete(resena.id)}
+                                                    style={{backgroundColor: '#8B0000', color: 'white', fontSize: '0.8em'}}
+                                                >
+                                                    Eliminar
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })
                         ) : (
                             <p>Todavía no hay reseñas para esta película. ¡Sé el primero!</p>
                         )}
