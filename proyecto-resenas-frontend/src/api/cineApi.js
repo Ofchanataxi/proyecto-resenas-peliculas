@@ -37,13 +37,17 @@ const handleResponse = async (response) => {
 
 // GET: Obtener todos los cines (Público)
 export const getCinesRequest = async () => {
-    const response = await fetch(API_URL);
+    const response = await fetch(API_URL, {
+        headers: getHeaders() // <-- AÑADIR ESTO
+    });
     return handleResponse(response);
 };
 
 // GET: Obtener un cine por ID (Público)
 export const getCineRequest = async (id) => {
-    const response = await fetch(`${API_URL}/${id}`);
+    const response = await fetch(`${API_URL}/${id}`, {
+        headers: getHeaders() // <-- AÑADIR ESTO
+    });
     return handleResponse(response);
 };
 

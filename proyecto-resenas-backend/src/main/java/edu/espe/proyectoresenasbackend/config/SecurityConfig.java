@@ -81,8 +81,13 @@ public class SecurityConfig {
                         .requestMatchers("/api/resenas/auth/**").permitAll()
                         .requestMatchers("/api/resenas/version").permitAll()
 
+                        // --- INICIO DE LA CORRECCIÓN ---
                         // GET público para ciertas entidades
-                        .requestMatchers(HttpMethod.GET, "/api/peliculas/**", "/api/cines/**", "/api/resenas/**").permitAll()
+                        // Las rutas deben coincidir con tus @RequestMapping
+                        .requestMatchers(HttpMethod.GET, "/api/resenas/peliculas/**").permitAll() // ANTES: /api/peliculas/**
+                        .requestMatchers(HttpMethod.GET, "/api/resenas/cines/**").permitAll()    // ANTES: /api/cines/**
+                        .requestMatchers(HttpMethod.GET, "/api/resenas/resena/**").permitAll()  // ANTES: /api/resenas/**
+                        // --- FIN DE LA CORRECCIÓN ---
 
                         // El resto requiere autenticación
                         .anyRequest().authenticated()
