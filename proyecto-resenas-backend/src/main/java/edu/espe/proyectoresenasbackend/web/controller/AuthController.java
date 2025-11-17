@@ -22,6 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
 
+//Controlador REST para autenticación y registro
 @RestController
 @RequestMapping("/api/resenas/auth")
 public class AuthController {

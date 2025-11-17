@@ -2,6 +2,7 @@ package edu.espe.proyectoresenasbackend.domain;
 
 import jakarta.persistence.*;
 
+//Entidad Cine que representa un cine en la base de datos
 @Entity
 @Table(name = "cines")
 public class Cine {

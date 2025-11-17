@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+//Controlador REST para la entidad Pelicula
 @RestController
 @RequestMapping("/api/resenas/peliculas")
 public class PeliculaController {

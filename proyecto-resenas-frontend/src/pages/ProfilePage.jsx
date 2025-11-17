@@ -44,7 +44,6 @@ function ProfilePage() {
             <h2>Mi Perfil</h2>
             <p><strong>Nombre:</strong> {user.nombreCompleto}</p>
             <p><strong>Email:</strong> {user.email}</p>
-            <p><strong>ID de Usuario:</strong> {user.id}</p>
             <p><strong>Estado:</strong> {user.activo ? 'Activo' : 'Inactivo'}</p>
 
             <hr style={{ margin: '20px 0' }} />

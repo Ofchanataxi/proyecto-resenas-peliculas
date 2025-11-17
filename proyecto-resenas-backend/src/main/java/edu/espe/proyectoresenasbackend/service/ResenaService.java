@@ -5,6 +5,7 @@ import edu.espe.proyectoresenasbackend.dto.ResenaResponse;
 
 import java.util.List;
 
+//Servicio para la entidad Resena
 public interface ResenaService {
     ResenaResponse create(ResenaRequest request);
 

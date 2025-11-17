@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
+//Entidad Resena que representa una reseña de una película realizada por un usuario
 @Entity
 @Table(name = "resenas")
 public class Resena {

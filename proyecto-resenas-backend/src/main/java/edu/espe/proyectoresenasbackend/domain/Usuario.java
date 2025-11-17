@@ -7,6 +7,7 @@ import org.springframework.security.core.userdetails.UserDetails; // <-- Importa
 import java.util.Collection; // <-- Importar
 import java.util.List; // <-- Importar
 
+// Entidad Usuario que implementa UserDetails para integración con Spring Security
 @Entity
 @Table(name = "usuarios")
 public class Usuario implements UserDetails {

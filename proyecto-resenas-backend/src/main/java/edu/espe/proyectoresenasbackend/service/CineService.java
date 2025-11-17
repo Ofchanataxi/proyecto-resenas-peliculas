@@ -5,6 +5,7 @@ import edu.espe.proyectoresenasbackend.dto.CineResponse;
 
 import java.util.List;
 
+//Servicio para la entidad Cine
 public interface CineService {
 
     CineResponse create(CineRequest request);

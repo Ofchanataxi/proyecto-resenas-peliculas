@@ -2,6 +2,7 @@ package edu.espe.proyectoresenasbackend.dto;
 
 import java.time.LocalDate;
 
+// DTO para la respuesta de Pelicula
 public class PeliculaResponse {
     private Long id;
     private String titulo;

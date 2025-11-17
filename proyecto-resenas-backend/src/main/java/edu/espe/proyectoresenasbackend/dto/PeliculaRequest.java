@@ -4,6 +4,7 @@ package edu.espe.proyectoresenasbackend.dto;
 import java.time.LocalDate;
 
 public class PeliculaRequest {
+    //Se crea la clase PeliculaRequest con sus atributos y métodos getters y setters
     private String titulo;
     private String director;
     private String genero;

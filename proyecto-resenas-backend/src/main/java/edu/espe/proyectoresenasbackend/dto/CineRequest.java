@@ -1,5 +1,6 @@
 package edu.espe.proyectoresenasbackend.dto;
 
+// DTO para la creación o actualización de un Cine
 public class CineRequest {
     private String nombre;
     private String direccion;

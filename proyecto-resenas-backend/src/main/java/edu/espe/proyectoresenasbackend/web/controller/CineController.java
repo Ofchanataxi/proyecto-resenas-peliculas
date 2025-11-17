@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+//Controlador REST para la entidad Cine
 @RestController
 @RequestMapping("/api/resenas/cines")
 public class CineController {
