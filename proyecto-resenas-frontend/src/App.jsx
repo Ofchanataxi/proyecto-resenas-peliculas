@@ -17,7 +17,7 @@ function App() {
           {/* Rutas Públicas */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/" element={<h1>Bienvenido a la App de Reseñas</h1>} />
+          <Route path="/" element={<h1>Bienvenido a la App de Reseñas CDPP</h1>} />
           
           {/* Rutas Protegidas */}
           <Route 
