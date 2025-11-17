@@ -1,0 +1,67 @@
+.pelicula-card {
+    background-color: var(--color-superficie);
+    border: 1px solid var(--color-borde);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    overflow: hidden; /* Para que la imagen no se salga */
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.pelicula-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+
+/* Aquí iría la imagen si la tuvieras */
+/* .pelicula-card-img {
+  width: 100%;
+  height: 400px;
+  object-fit: cover;
+}
+*/
+
+.pelicula-card-body {
+    padding: 1.5rem;
+}
+
+.pelicula-card-body h3 {
+    font-size: 1.5rem;
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    color: var(--color-texto);
+    /* Truncar texto si es muy largo */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pelicula-card-body p {
+    font-size: 0.9rem;
+    color: var(--color-texto-secundario);
+    margin-bottom: 0.5rem;
+}
+
+.pelicula-card-body p strong {
+    color: var(--color-texto-secundario);
+    font-weight: 600;
+}
+
+.card-link {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.6em 1.2em;
+    background-color: var(--color-primario);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 0.9em;
+    text-align: center;
+    width: 100%;
+    transition: background-color 0.2s;
+}
+
+.card-link:hover {
+    background-color: var(--color-primario-hover);
+    color: white;
+}

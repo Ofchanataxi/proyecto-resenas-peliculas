@@ -1,0 +1,7 @@
+.cine-list {
+    display: grid;
+    /* Usamos el mismo layout que PeliculaList */
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+    padding: 1rem 0;
+}
