@@ -57,32 +57,40 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:5173",
-                "https://proyecto-resenas-frontend.onrender.com/"
+                "https://proyecto-resenas-frontend.onrender.com" // Quité la barra al final
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Cache-Control"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        // Aplicar CORS a todas las rutas de la API
         source.registerCorsConfiguration("/api/**", configuration);
         return source;
     }
 
+    // --- ARREGLO ---
+    // Solo debe existir UN Bean de SecurityFilterChain.
+    // Este Bean combina la lógica de los dos que tenías.
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-
-
+                        // Permitir todas las peticiones OPTIONS (para pre-flight de CORS)
                         .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
 
-                        // Rutas públicas
+                        // Rutas públicas de autenticación y versión
                         .requestMatchers("/api/resenas/auth/**").permitAll()
                         .requestMatchers("/api/resenas/version").permitAll()
 
-                        // El resto requiere autenticación
+                        // Rutas públicas para LEER (GET) contenido
+                        .requestMatchers(HttpMethod.GET, "/api/peliculas/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/cines/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/resenas/**").permitAll() // Asumiendo que esta será tu ruta
+
+                        // El resto de peticiones (POST, PUT, DELETE, etc.) requieren autenticación
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
@@ -90,29 +98,8 @@ public class SecurityConfig {
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
+        // ¡Faltaba esto en tu segundo bean!
         return http.build();
     }
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-
-                        .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
-
-                        // Rutas públicas
-                        .requestMatchers("/api/resenas/auth/**").permitAll()
-                        .requestMatchers("/api/resenas/version").permitAll()
-
-
-                        .requestMatchers(HttpMethod.GET, "/api/peliculas/**", "/api/cines/**", "/api/resenas/**").permitAll()
-
-                        .anyRequest().authenticated()
-                )
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 }

@@ -1,17 +1,19 @@
 package edu.espe.proyectoresenasbackend.web.controller;
 
-import edu.espe.proyectoresenasbackend.model.Pelicula; // <-- Asegúrate de importar tu modelo Pelicula
-import edu.espe.proyectoresenasbackend.service.PeliculaService; // <-- Necesitarás crear este servicio
+// 1. Importa los DTOs que vas a usar
+import edu.espe.proyectoresenasbackend.dto.PeliculaRequest;
+import edu.espe.proyectoresenasbackend.dto.PeliculaResponse;
+import edu.espe.proyectoresenasbackend.service.PeliculaService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/peliculas") // <-- Esta es la URL base para todas las películas
+@RequestMapping("/api/peliculas") // Esta URL base es correcta
 public class PeliculaController {
 
-    // Inyectamos un servicio que manejará la lógica (debes crearlo)
     private final PeliculaService peliculaService;
 
     public PeliculaController(PeliculaService peliculaService) {
@@ -19,37 +21,45 @@ public class PeliculaController {
     }
 
     // GET /api/peliculas (Público)
-    // Este es el endpoint que tu HomePage está intentando llamar
+    // 2. Cambia el tipo de retorno a List<PeliculaResponse>
     @GetMapping
-    public ResponseEntity<List<Pelicula>> getAllPeliculas() {
-        return ResponseEntity.ok(peliculaService.getAllPeliculas());
+    public ResponseEntity<List<PeliculaResponse>> getAllPeliculas() {
+        // Asumimos que peliculaService.list() devuelve List<PeliculaResponse>
+        return ResponseEntity.ok(peliculaService.list());
     }
 
     // GET /api/peliculas/{id} (Público)
+    // 3. Cambia el tipo de retorno a PeliculaResponse
     @GetMapping("/{id}")
-    public ResponseEntity<Pelicula> getPeliculaById(@PathVariable Long id) {
-        Pelicula pelicula = peliculaService.getPeliculaById(id);
+    public ResponseEntity<PeliculaResponse> getPeliculaById(@PathVariable Long id) {
+        // 4. Cambia el nombre del método del servicio para que sea consistente (getById)
+        // Asumimos que peliculaService.getById(id) devuelve PeliculaResponse
+        PeliculaResponse pelicula = peliculaService.get(id);
         return ResponseEntity.ok(pelicula);
     }
 
-    // POST /api/peliculas (Protegido - Asumimos que solo admin puede crear)
+    // POST /api/peliculas (Protegido)
+    // 5. Cambia el parámetro a PeliculaRequest y el retorno a PeliculaResponse
     @PostMapping
-    public ResponseEntity<Pelicula> createPelicula(@RequestBody Pelicula pelicula) {
-        Pelicula nuevaPelicula = peliculaService.createPelicula(pelicula);
-        return ResponseEntity.status(201).body(nuevaPelicula);
+    public ResponseEntity<PeliculaResponse> createPelicula(@RequestBody PeliculaRequest peliculaRequest) {
+        // Asumimos que peliculaService.create() acepta un Request y devuelve un Response
+        PeliculaResponse nuevaPelicula = peliculaService.create(peliculaRequest);
+        return ResponseEntity.status(HttpStatus.CREATED).body(nuevaPelicula);
     }
 
     // PUT /api/peliculas/{id} (Protegido)
+    // 6. Cambia el parámetro a PeliculaRequest y el retorno a PeliculaResponse
     @PutMapping("/{id}")
-    public ResponseEntity<Pelicula> updatePelicula(@PathVariable Long id, @RequestBody Pelicula peliculaDetails) {
-        Pelicula updatedPelicula = peliculaService.updatePelicula(id, peliculaDetails);
+    public ResponseEntity<PeliculaResponse> updatePelicula(@PathVariable Long id, @RequestBody PeliculaRequest peliculaRequest) {
+        // Asumimos que peliculaService.update() acepta ID y Request, y devuelve un Response
+        PeliculaResponse updatedPelicula = peliculaService.update(id, peliculaRequest);
         return ResponseEntity.ok(updatedPelicula);
     }
 
     // DELETE /api/peliculas/{id} (Protegido)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePelicula(@PathVariable Long id) {
-        peliculaService.deletePelicula(id);
+        peliculaService.delete(id);
         return ResponseEntity.noContent().build();
     }
 }
