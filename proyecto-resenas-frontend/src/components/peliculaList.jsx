@@ -1,6 +1,6 @@
 import React from 'react';
 import PeliculaCard from './PeliculaCard'; // <-- El componente que muestra cada película
-import './peliculaList.css'; // <-- Crearemos este CSS para la estética
+import './PeliculaList.css'; // <-- Crearemos este CSS para la estética
 
 function PeliculaList({ peliculas }) {
     if (peliculas.length === 0) {
