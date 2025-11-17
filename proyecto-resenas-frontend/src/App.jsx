@@ -25,6 +25,9 @@ function App() {
             <main>
                 <Routes>
                     {/* --- Rutas Públicas --- */}
+                    <Route path="/usuarios" element={<UsuariosPage />} />
+                    <Route path="/admin/peliculas" element={<AdminPeliculasPage />} />
+                    <Route path="/admin/cines" element={<AdminCinesPage />} />
 
                     {/* La ruta raíz ahora es la cartelera de películas */}
                     <Route path="/" element={<HomePage />} />
@@ -44,14 +47,6 @@ function App() {
                         {/* Nota: Crear/editar reseñas se manejará dentro
               de PeliculaDetallePage, verificando al usuario.
             */}
-                    </Route>
-
-                    {/* --- Rutas Protegidas (Admin) --- */}
-                    {/* Asumimos que ProtectedRoute podría checar roles a futuro */}
-                    <Route element={<ProtectedRoute />}>
-                        <Route path="/usuarios" element={<UsuariosPage />} />
-                        <Route path="/admin/peliculas" element={<AdminPeliculasPage />} />
-                        <Route path="/admin/cines" element={<AdminCinesPage />} />
                     </Route>
                 </Routes>
             </main>

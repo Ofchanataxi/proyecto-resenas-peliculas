@@ -7,59 +7,44 @@ const getAuthHeader = () => {
     const token = localStorage.getItem('token');
     return token ? { 'Authorization': `Bearer ${token}` } : {};
 };
-
 const getHeaders = (customHeaders = {}) => ({
     ...getAuthHeader(),
     ...customHeaders,
 });
-
-// ... (Tu handleResponse está bien, lo dejamos como está)
 const handleResponse = async (response) => {
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `Error ${response.status}`);
     }
-
     const contentType = response.headers.get('content-type');
-
     if (response.status === 204) {
         return { success: true };
     }
-
     if (contentType && contentType.indexOf('application/json') !== -1) {
         return response.json();
     }
-    
-    // CORRECCIÓN: Tu `handleResponse` anterior tenía un bug aquí.
-    // Lo mejor es devolver un objeto vacío si no es JSON pero la respuesta es OK.
-    return {}; 
+    return {};
 };
 
 
-// GET: Obtener todas las películas
-// CORRECCIÓN: Esta ruta es segura y necesita el token.
+// GET: Obtener todas las películas (envía token si existe)
 export const getPeliculasRequest = async () => {
-    // ¡FALTABA ESTO! Añadimos los headers con el token.
     const response = await fetch(API_URL, {
         headers: getHeaders()
     });
     return handleResponse(response);
 };
 
-// GET: Obtener una película por ID
-// CORRECCIÓN: Esta ruta también es segura.
+// GET: Obtener una película por ID (envía token si existe)
 export const getPeliculaRequest = async (id) => {
     const response = await fetch(`${API_URL}/${id}`, {
         headers: getHeaders()
     });
     return handleResponse(response);
 };
-
 // POST: Crear una nueva película (Protegido)
 export const createPeliculaRequest = async (pelicula) => {
-    
-    // CORRECCIÓN: Los nombres de las claves deben ser camelCase
-    // para coincidir con tu DTO de Java (PeliculaRequest.java)
+    // CORRECCIÓN 2: Los campos deben ser camelCase
     const peliculaData = {
         titulo: pelicula.titulo,
         director: pelicula.director,
@@ -78,8 +63,7 @@ export const createPeliculaRequest = async (pelicula) => {
 
 // PUT: Actualizar una película (Protegido)
 export const updatePeliculaRequest = async (id, pelicula) => {
-    
-    // CORRECCIÓN: Igual que en create, usamos camelCase
+    // CORRECCIÓN 2: Los campos deben ser camelCase
     const peliculaData = {
         titulo: pelicula.titulo,
         director: pelicula.director,

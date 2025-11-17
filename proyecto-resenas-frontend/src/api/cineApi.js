@@ -35,18 +35,20 @@ const handleResponse = async (response) => {
 };
 // --- ---
 
-// GET: Obtener todos los cines (Público)
+// GET: Obtener todos los cines (Público Y Admin)
 export const getCinesRequest = async () => {
+    // CORRECCIÓN: Faltaba enviar los headers
     const response = await fetch(API_URL, {
-        headers: getHeaders() // <-- AÑADIR ESTO
+        headers: getHeaders()
     });
     return handleResponse(response);
 };
 
-// GET: Obtener un cine por ID (Público)
+// GET: Obtener un cine por ID (Público Y Admin)
 export const getCineRequest = async (id) => {
+    // CORRECCIÓN: Faltaba enviar los headers
     const response = await fetch(`${API_URL}/${id}`, {
-        headers: getHeaders() // <-- AÑADIR ESTO
+        headers: getHeaders()
     });
     return handleResponse(response);
 };
@@ -77,9 +79,6 @@ export const deleteCineRequest = async (id) => {
         method: 'DELETE',
         headers: getHeaders(),
     });
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Error ${response.status}`);
-    }
-    return response.status === 204;
+    // Usamos el handleResponse actualizado que maneja 204
+    return handleResponse(response);
 };
