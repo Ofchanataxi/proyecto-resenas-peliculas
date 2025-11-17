@@ -1,5 +1,7 @@
 package edu.espe.proyectoresenasbackend.dto;
 
+
+// DTO para la respuesta de autenticación
 public class AuthResponse {
     private String token;
 
