@@ -64,7 +64,7 @@ public class SecurityConfig {
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/api/**", configuration);
+        source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 
@@ -77,12 +77,17 @@ public class SecurityConfig {
 
                         // --- ¡ESTA ES LA LÍNEA CRÍTICA QUE FALTA! ---
                         // Permite todas las peticiones OPTIONS de pre-vuelo
-                        .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // --- FIN DE LA LÍNEA ---
 
                         // Rutas públicas
                         .requestMatchers("/api/resenas/auth/**").permitAll()
                         .requestMatchers("/api/resenas/version").permitAll()
+                        .requestMatchers("/api/peliculas/**").permitAll()
+                        .requestMatchers("/api/cines/**").permitAll()
+                        .requestMatchers("/api/usuarios/**").permitAll()
+                        .requestMatchers("/api/resenas/**").permitAll()
+
 
                         // El resto requiere autenticación
                         .anyRequest().authenticated()

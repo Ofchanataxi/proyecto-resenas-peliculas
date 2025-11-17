@@ -1,4 +1,7 @@
 package edu.espe.proyectoresenasbackend.repository;
 
-public interface CineRepository {
+import edu.espe.proyectoresenasbackend.domain.Cine;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface CineRepository extends JpaRepository<Cine, Long> {
 }
