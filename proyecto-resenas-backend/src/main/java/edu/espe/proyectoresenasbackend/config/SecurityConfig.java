@@ -87,7 +87,13 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/resenas/peliculas/**").permitAll() // ANTES: /api/peliculas/**
                         .requestMatchers(HttpMethod.GET, "/api/resenas/cines/**").permitAll()    // ANTES: /api/cines/**
                         .requestMatchers(HttpMethod.GET, "/api/resenas/resena/**").permitAll()  // ANTES: /api/resenas/**
-                        // --- FIN DE LA CORRECCIÓN ---
+                        // NUEVOS
+                        .requestMatchers(HttpMethod.GET, "/api/resenas/chat/stream").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/resenas/chat/messages/recent").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/resenas/chat/simulator/status").permitAll()
+
+                        // Las operaciones de escritura en chat requieren autenticación
+                        .requestMatchers("/api/resenas/chat/**").authenticated()
 
                         // El resto requiere autenticación
                         .anyRequest().authenticated()
