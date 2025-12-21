@@ -3,11 +3,11 @@ package edu.espe.proyectoresenasbackend.web.controller;
 import edu.espe.proyectoresenasbackend.dto.ResenaRequest;
 import edu.espe.proyectoresenasbackend.dto.ResenaResponse;
 import edu.espe.proyectoresenasbackend.service.ResenaService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-//Controlador REST para la entidad Resena
 @RestController
 @RequestMapping("/api/resenas/resena")
 public class ResenaController {
@@ -18,32 +18,46 @@ public class ResenaController {
     }
 
     @PostMapping
-    public ResenaResponse create(@RequestBody ResenaRequest request) {
-        return service.create(request);
+    public ResponseEntity<ResenaResponse> create(@RequestBody ResenaRequest request) {
+        // .block() fuerza la ejecución síncrona para evitar el error 403 de Security
+        ResenaResponse response = service.create(request).block();
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
-    public ResenaResponse get(@PathVariable Long id) {
-        return service.get(id);
+    public ResponseEntity<ResenaResponse> get(@PathVariable Long id) {
+        ResenaResponse response = service.get(id).block();
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping
-    public List<ResenaResponse> list() {
-        return service.list();
+    public ResponseEntity<List<ResenaResponse>> list() {
+        // Convertimos el Flux a una lista estándar de Java
+        List<ResenaResponse> response = service.list().collectList().block();
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{id}")
-    public ResenaResponse update(@PathVariable Long id, @RequestBody ResenaRequest request) {
-        return service.update(id, request);
+    public ResponseEntity<ResenaResponse> update(@PathVariable Long id, @RequestBody ResenaRequest request) {
+        ResenaResponse response = service.update(id, request).block();
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
-        service.delete(id);
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        service.delete(id).block();
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/pelicula/{peliculaId}")
-    public List<ResenaResponse> listByPelicula(@PathVariable Long peliculaId) {
-        return service.listByPeliculaId(peliculaId);
+    public ResponseEntity<List<ResenaResponse>> listByPelicula(@PathVariable Long peliculaId) {
+        List<ResenaResponse> response = service.listByPeliculaId(peliculaId).collectList().block();
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/demo-backpressure")
+    public ResponseEntity<List<String>> demoBackpressure() { // Retorna List<String>
+        List<String> logs = service.procesarCalificacionesPorLotes();
+        return ResponseEntity.ok(logs);
     }
 }

@@ -65,3 +65,20 @@ export const deleteResenaRequest = async (id) => {
     }
     return response.status === 204;
 };
+
+export const getResenasByPelicula = async (peliculaId) => {
+    const response = await fetch(`${API_URL}/pelicula/${peliculaId}`, {
+        headers: getHeaders()
+    });
+    return handleResponse(response);
+};
+
+// --- NUEVO MÉTODO PARA EL LABORATORIO ---
+export const triggerBackpressureDemo = async () => {
+    const response = await fetch(`${API_URL}/demo-backpressure`, {
+        method: 'POST',
+        headers: getHeaders()
+    });
+    // Este endpoint devuelve un String plano, handleResponse lo manejará con .text()
+    return handleResponse(response);
+};
