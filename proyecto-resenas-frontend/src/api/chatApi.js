@@ -1,3 +1,4 @@
+//Api para el funcionamiento del chat
 const BASE_URL = "http://localhost:8080/api/resenas/chat";
 
 export const startSimulation = async () => {
