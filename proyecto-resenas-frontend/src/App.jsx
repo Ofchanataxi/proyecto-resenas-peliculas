@@ -17,6 +17,8 @@ import CinesPage from './pages/CinesPage';
 import HomePage from "./pages/homePage"; // Nueva
 import AdminPeliculasPage from './pages/AdminPeliculasPage';
 import AdminCinesPage from './pages/AdminCinesPage';
+import ChatPage from './pages/ChatPage';
+
 
 function App() {
     return (
@@ -41,6 +43,10 @@ function App() {
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="/perfil" element={<ProfilePage />} />
+
+                    {/* Para las rese;as */}
+                    <Route path="/chat-resenas" element={<ChatPage />} />
+
 
                 </Routes>
             </main>
