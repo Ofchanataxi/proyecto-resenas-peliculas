@@ -7,6 +7,8 @@ import {
     connectToStream,
 } from "../api/chatApi";
 
+
+//funciopnes del chat
 export default function ChatPage() {
     const [messages, setMessages] = useState([]);
     const [status, setStatus] = useState(null);
