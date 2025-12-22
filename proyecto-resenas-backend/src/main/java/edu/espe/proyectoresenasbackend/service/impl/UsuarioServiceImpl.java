@@ -8,7 +8,7 @@ import edu.espe.proyectoresenasbackend.repository.UsuarioRepository;
 import edu.espe.proyectoresenasbackend.service.UsuarioService;
 import edu.espe.proyectoresenasbackend.web.advice.ConflictException;
 import edu.espe.proyectoresenasbackend.web.advice.NotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder; // <-- Asegúrate de importar esto
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,18 +17,14 @@ import java.util.Map;
 @Service
 public class UsuarioServiceImpl implements UsuarioService {
 
-    // --- ESTOS SON LOS CAMPOS ---
     private final UsuarioRepository repo;
-    private final PasswordEncoder passwordEncoder; // <-- Descomenta o añade esta línea
+    private final PasswordEncoder passwordEncoder;
 
-    // --- ESTE ES EL CONSTRUCTOR CORREGIDO ---
-    // Debe aceptar *ambos* beans para que Spring pueda inyectarlos
     public UsuarioServiceImpl(UsuarioRepository repo, PasswordEncoder passwordEncoder) {
         this.repo = repo;
-        this.passwordEncoder = passwordEncoder; // <-- Esta línea faltaba
+        this.passwordEncoder = passwordEncoder;
     }
 
-    // --- AHORA TU CÓDIGO FUNCIONARÁ ---
     @Override
     public UsuarioResponse create(UsuarioRequestData request) {
         if(repo.existsByEmail(request.getEmail())){
@@ -47,9 +43,23 @@ public class UsuarioServiceImpl implements UsuarioService {
         return toResponse(saved);
     }
 
-    // ... (El resto de tus métodos: getById, list, update, etc.) ...
+    @Override
+    public Usuario createUser(UsuarioRequestData request) {
+        if(repo.existsByEmail(request.getEmail())){
+            throw new ConflictException("El email ya está registrado");
+        }
 
-    // Asegúrate de que tu método 'update' también use el passwordEncoder
+        Usuario usuario = new Usuario();
+        usuario.setNombreCompleto(request.getNombreCompleto());
+        usuario.setEmail(request.getEmail());
+        // Encriptar contraseña
+        usuario.setContrasena(passwordEncoder.encode(request.getContrasena()));
+        usuario.setActivo(true);
+
+        // Guardar y retornar la entidad completa (con el ID generado)
+        return repo.save(usuario);
+    }
+
     @Override
     public UsuarioResponse update(Long id, UsuarioRequestData request) {
         Usuario usuario = repo.findById(id).orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
@@ -70,7 +80,6 @@ public class UsuarioServiceImpl implements UsuarioService {
         return toResponse(repo.save(usuario));
     }
 
-    // ... (Asegúrate de tener el método 'delete' que te di) ...
     @Override
     public void delete(Long id) {
         if (!repo.existsById(id)) {
@@ -79,7 +88,6 @@ public class UsuarioServiceImpl implements UsuarioService {
         repo.deleteById(id);
     }
 
-    // ... (El resto de tus métodos: getStats, toResponse, etc.) ...
     @Override
     public UsuarioResponse getById(Long id) {
         Usuario usuario = repo.findById(id).orElseThrow(() -> new NotFoundException("Usuario no encontrado"));

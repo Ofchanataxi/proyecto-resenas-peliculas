@@ -41,46 +41,54 @@ public class AuthController {
 
     // Endpoint de Registro
     @PostMapping("/register")
+    // @Valid es importante aquí para validar los campos antes de entrar al código
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody UsuarioRequestData request) {
-        // 1. Crea el usuario
-        usuarioService.create(request);
-        // 2. Carga los detalles y genera un token
-        final UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
-        final String token = jwtService.generateToken(userDetails);
-        // 3. Devuelve el token
-        return ResponseEntity.status(HttpStatus.CREATED).body(new AuthResponse(token));
+        // Ahora sí funcionará esta llamada porque agregaste 'createUser'
+        Usuario nuevoUsuario = usuarioService.createUser(request);
+
+        String token = jwtService.generateToken(nuevoUsuario);
+
+        AuthResponse response = new AuthResponse(
+                token,
+                nuevoUsuario.getId()
+        );
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // Endpoint de Login
+    // --- ENDPOINT LOGIN CORREGIDO ---
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         try {
-            // 1. Intenta autenticar
+            // 1. Autenticar
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getContrasena())
             );
 
-            // 2. Si tiene éxito, genera y devuelve el token
-            final UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
-            final String token = jwtService.generateToken(userDetails);
-            return ResponseEntity.ok(new AuthResponse(token));
+            // 2. Cargar usuario y hacer CAST a nuestra entidad 'Usuario'
+            // Esto funciona porque tu clase Usuario implementa UserDetails
+            UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
+            Usuario usuario = (Usuario) userDetails;
+
+            // 3. Generar Token
+            String token = jwtService.generateToken(usuario);
+
+            // 4. Devolver Token + ID + Nombre
+            return ResponseEntity.ok(new AuthResponse(
+                    token,
+                    usuario.getId()
+            ));
 
         } catch (BadCredentialsException e) {
-            // 3. Si la contraseña es incorrecta
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email o contraseña incorrectos");
-
-            // --- LÓGICA DE REACTIVACIÓN ---
         } catch (DisabledException e) {
-            // 4. Si la cuenta está desactivada (isEnabled() devolvió false)
-            // Devuelve un error 403 (Prohibido) con un cuerpo JSON específico
             Map<String, String> errorResponse = Map.of(
                     "error", "ACCOUNT_DEACTIVATED",
                     "message", "Tu cuenta está desactivada. ¿Deseas reactivarla?",
-                    "email", request.getEmail() // Devuelve el email para que el front sepa a quién reactivar
+                    "email", request.getEmail()
             );
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
         }
-        // --- FIN LÓGICA DE REACTIVACIÓN ---
     }
 
     // Endpoint público para reactivar la cuenta
