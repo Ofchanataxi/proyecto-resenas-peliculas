@@ -15,11 +15,14 @@ function Navbar() {
     return (
         <nav className="navbar">
             <div className="navbar-container">
+                
+                
                 <Link to="/" className="navbar-logo">
                     🎬 CineReseñas
                 </Link>
 
                 <div className="navbar-links">
+                    
                     <NavLink to="/" className={({isActive}) => isActive ? "nav-link active" : "nav-link"}>
                         Películas
                     </NavLink>
@@ -51,6 +54,7 @@ function Navbar() {
                             <Link to="/perfil" className="nav-user">
                                 Hola, {user?.nombreCompleto || user?.email}
                             </Link>
+                            <Link to="/chat" className="nav-user">Chat 💬</Link>
                             <button onClick={handleLogout} className="nav-button-logout">
                                 Cerrar Sesión
                             </button>
