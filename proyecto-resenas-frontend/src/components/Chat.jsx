@@ -43,7 +43,6 @@ const Chat = ({ usuarioId }) => {
       <h2>💬 Chat en tiempo real</h2>
 
       <ChatSimulatorControls />
-
       <ChatMessages messages={messages} />
       <ChatInput onSend={handleSend} />
     </div>

@@ -19,10 +19,7 @@ import CinesPage from './pages/CinesPage';
 import AdminPeliculasPage from './pages/AdminPeliculasPage';
 import AdminCinesPage from './pages/AdminCinesPage';
 import ChatPage from './pages/ChatPage';
-
-
-// ⭐ Chat
-import ChatPage from './pages/ChatPage';
+import Chat from './components/Chat';
 
 function App() {
     return (
@@ -86,7 +83,7 @@ function App() {
                     />
 
                     {/* Para las rese;as */}
-                    <Route path="/chat-resenas" element={<ChatPage />} />
+                    <Route path="/chat-resenas" element={<Chat />} />
 
 
                 </Routes>

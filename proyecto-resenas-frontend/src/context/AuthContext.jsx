@@ -1,60 +1,62 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import * as authApi from '../api/authApi'; // Crearemos este archivo
+import React, { createContext, useContext, useState, useEffect } from "react";
+import * as authApi from "../api/authApi";
 
 const AuthContext = createContext(null);
-
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-    const [token, setToken] = useState(localStorage.getItem('token'));
-    const [user, setUser] = useState(null); // Aquí guardaremos los datos del usuario logueado
-    const [loading, setLoading] = useState(true); // Para saber si estamos verificando el token
+  const [token, setToken] = useState(localStorage.getItem("token"));
+  const [usuarioId, setUsuarioId] = useState(
+    localStorage.getItem("usuarioId")
+  );
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        // Al cargar la app, verifica si hay un token válido
-        const verifyToken = async () => {
-            if (token) {
-                try {
-                    // Llama al nuevo endpoint /me
-                    const userData = await authApi.getMiPerfil(token); 
-                    setUser(userData); // Guarda los datos del usuario
-                } catch (error) {
-                    // El token es inválido o expiró
-                    console.error("Token inválido", error);
-                    setToken(null);
-                    localStorage.removeItem('token');
-                }
-            }
-            setLoading(false);
-        };
-        verifyToken();
-    }, [token]);
-
-    const login = (newToken) => {
-        setToken(newToken);
-        localStorage.setItem('token', newToken);
-        // El useEffect se encargará de llamar a /me y setear el usuario
+  useEffect(() => {
+    const verifyToken = async () => {
+      if (token) {
+        try {
+          const userData = await authApi.getMiPerfil(token);
+          setUser(userData);
+        } catch (error) {
+          console.error("Token inválido", error);
+          logout();
+        }
+      }
+      setLoading(false);
     };
+    verifyToken();
+  }, [token]);
 
-    const logout = () => {
-        setToken(null);
-        setUser(null);
-        localStorage.removeItem('token');
-    };
+  const login = ({ token, usuarioId }) => {
+    setToken(token);
+    setUsuarioId(usuarioId);
 
-    const value = {
-        token,
-        user,
-        isAuthenticated: !!user,
-        loading,
-        login,
-        logout,
-    };
+    localStorage.setItem("token", token);
+    localStorage.setItem("usuarioId", usuarioId);
+  };
 
-    // No renderiza la app hasta que no se haya verificado el token
-    return (
-        <AuthContext.Provider value={value}>
-            {!loading && children}
-        </AuthContext.Provider>
-    );
+  const logout = () => {
+    setToken(null);
+    setUsuarioId(null);
+    setUser(null);
+    localStorage.removeItem("token");
+    localStorage.removeItem("usuarioId");
+  };
+
+  const value = {
+    token,
+    usuarioId,
+    user,
+    isAuthenticated: !!user,
+    loading,
+    login,
+    logout,
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
 };
