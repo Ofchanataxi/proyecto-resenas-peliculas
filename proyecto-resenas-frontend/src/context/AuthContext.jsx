@@ -19,15 +19,17 @@ export const AuthProvider = ({ children }) => {
           const userData = await authApi.getMiPerfil(token);
           setUser(userData);
         } catch (error) {
-          console.error("Token inválido", error);
           logout();
         }
       }
       setLoading(false);
     };
+
     verifyToken();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  // ✅ LOGIN GUARDA TOKEN + ID
   const login = ({ token, usuarioId }) => {
     setToken(token);
     setUsuarioId(usuarioId);
@@ -44,18 +46,18 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("usuarioId");
   };
 
-  const value = {
-    token,
-    usuarioId,
-    user,
-    isAuthenticated: !!user,
-    loading,
-    login,
-    logout,
-  };
-
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={{
+        token,
+        usuarioId,
+        user,
+        loading,
+        isAuthenticated: !!token,
+        login,
+        logout,
+      }}
+    >
       {!loading && children}
     </AuthContext.Provider>
   );
