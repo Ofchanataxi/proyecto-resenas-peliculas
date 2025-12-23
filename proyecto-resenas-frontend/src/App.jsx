@@ -18,6 +18,8 @@ import CinesPage from './pages/CinesPage';
 // Admin
 import AdminPeliculasPage from './pages/AdminPeliculasPage';
 import AdminCinesPage from './pages/AdminCinesPage';
+import ChatPage from './pages/ChatPage';
+
 
 // ⭐ Chat
 import ChatPage from './pages/ChatPage';
@@ -82,6 +84,10 @@ function App() {
                             </ProtectedRoute>
                         }
                     />
+
+                    {/* Para las rese;as */}
+                    <Route path="/chat-resenas" element={<ChatPage />} />
+
 
                 </Routes>
             </main>
