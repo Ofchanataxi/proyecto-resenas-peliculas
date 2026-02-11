@@ -5,7 +5,8 @@ import edu.espe.proyectoresenasbackend.dto.PeliculaResponse;
 
 import java.util.List;
 
-// Servicio para gestionar las operaciones relacionadas con Peliculas
+
+// Servicio para gestionar las operaciones relacionadas con PELICULAS
 public interface PeliculaService {
     PeliculaResponse create(PeliculaRequest request);
 
