@@ -26,6 +26,9 @@ class CineServiceTest {
         cineService = new CineServiceImpl(cineRepository);
     }
 
+
+    //comentario
+
     @Test
     void update_whenCineExists_shouldApplyAllIncomingFieldsAndReturnUpdatedDto() {
         // Arrange

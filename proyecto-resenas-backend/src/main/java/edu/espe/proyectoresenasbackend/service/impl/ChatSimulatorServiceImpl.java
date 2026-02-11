@@ -69,7 +69,7 @@ public class ChatSimulatorServiceImpl implements ChatSimulatorService {
         if (isRunning.get()) {
             return Map.of(
                     "success", false,
-                    "message", "La simulación ya está en ejecución",
+                    "message", "La simulación ya está en ejecución ",
                     "activeUsers", simulatedUserIds.size()
             );
         }
