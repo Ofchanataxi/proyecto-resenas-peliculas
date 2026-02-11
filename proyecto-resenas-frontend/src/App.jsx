@@ -5,42 +5,86 @@ import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
 // Páginas de Autenticación y Usuario
-
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
-import UsuariosPage from './pages/UsuariosPage'; // Admin
+import UsuariosPage from './pages/UsuariosPage';
 
-// --- NUEVAS PÁGINAS (Debemos importarlas) ---
-import PeliculaDetallePage from './pages/PeliculaDetallePage'; // Nueva
+// Páginas principales
+import HomePage from "./pages/homePage";
+import PeliculaDetallePage from './pages/PeliculaDetallePage';
 import CinesPage from './pages/CinesPage';
-import HomePage from "./pages/homePage"; // Nueva
+
+// Admin
 import AdminPeliculasPage from './pages/AdminPeliculasPage';
 import AdminCinesPage from './pages/AdminCinesPage';
+import ChatPage from './pages/ChatPage';
+import Chat from './components/Chat';
 
 function App() {
     return (
         <div className="App">
-            <Navbar /> {/* <-- La barra de navegación siempre visible */}
+            <Navbar /> {/* Siempre visible */}
             <main>
                 <Routes>
-                    {/* --- Rutas Públicas --- */}
-                    <Route path="/usuarios" element={<UsuariosPage />} />
-                    <Route path="/admin/peliculas" element={<AdminPeliculasPage />} />
-                    <Route path="/admin/cines" element={<AdminCinesPage />} />
 
-                    {/* La ruta raíz ahora es la cartelera de películas */}
+                    {/* --- RUTAS PÚBLICAS --- */}
                     <Route path="/" element={<HomePage />} />
-
-                    {/* Página de detalles de una película */}
                     <Route path="/pelicula/:id" element={<PeliculaDetallePage />} />
-
-                    {/* Página de cines */}
                     <Route path="/cines" element={<CinesPage />} />
-
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
-                    <Route path="/perfil" element={<ProfilePage />} />
+
+                    {/* --- RUTAS PROTEGIDAS --- */}
+                    <Route
+                        path="/perfil"
+                        element={
+                            <ProtectedRoute>
+                                <ProfilePage />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/chat"
+                        element={
+                            <ProtectedRoute>
+                                <ChatPage />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    {/* --- ADMIN --- */}
+                    <Route
+                        path="/usuarios"
+                        element={
+                            <ProtectedRoute>
+                                <UsuariosPage />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/admin/peliculas"
+                        element={
+                            <ProtectedRoute>
+                                <AdminPeliculasPage />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/admin/cines"
+                        element={
+                            <ProtectedRoute>
+                                <AdminCinesPage />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    {/* Para las rese;as */}
+                    <Route path="/chat-resenas" element={<Chat />} />
+
 
                 </Routes>
             </main>
