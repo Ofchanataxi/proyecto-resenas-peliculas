@@ -7,7 +7,7 @@ function LoginPage() {
     const [email, setEmail] = useState('');
     const [contrasena, setContrasena] = useState('');
     const [error, setError] = useState(null);
-    
+
     // Estado para manejar la reactivación
     const [showReactivate, setShowReactivate] = useState(false);
 
@@ -23,7 +23,12 @@ function LoginPage() {
 
         try {
             const data = await authApi.login(email, contrasena);
-            login(data.token); // Guarda el token en el contexto
+            // ✅ GUARDAR TOKEN + ID
+            login({
+                token: data.token,
+                usuarioId: data.id
+            });
+
             navigate(from, { replace: true }); // Envía al usuario a donde quería ir
         } catch (err) {
             if (err.status === 403 && err.data.error === "ACCOUNT_DEACTIVATED") {
@@ -63,7 +68,7 @@ function LoginPage() {
                 <button type="submit">Login</button>
             </form>
             {error && <p style={{ color: 'red' }}>{error}</p>}
-            
+
             {/* Lógica de Reactivación */}
             {showReactivate && (
                 <div style={{ marginTop: '1rem', border: '1px solid orange', padding: '1rem' }}>

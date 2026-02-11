@@ -1,52 +1,47 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getPeliculaRequest } from '../api/peliculaApi';
-import { getResenasPorPeliculaRequest, createResenaRequest, deleteResenaRequest } from '../api/resenaApi';
+import {
+    getResenasByPelicula,
+    createResenaRequest,
+    deleteResenaRequest,
+    triggerBackpressureDemo,
+    connectResenasStreamByPelicula,
+} from '../api/resenaApi';
 import './PeliculaDetallePage.css';
 
 function PeliculaDetallePage() {
-    const { id } = useParams(); // Obtiene el 'id' de la URL
-    const { isAuthenticated, user } = useAuth(); // Para saber si puede comentar
+    const { id } = useParams();
+    const { isAuthenticated, user } = useAuth();
 
     const [pelicula, setPelicula] = useState(null);
-    const [reseñas, setReseñas] = useState([]);
+    const [resenas, setResenas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isLiveConnected, setIsLiveConnected] = useState(false);
+    const [newLiveMessageId, setNewLiveMessageId] = useState(null);
 
-    // --- Estados para el formulario de nueva reseña ---
+    const [demoStatus, setDemoStatus] = useState('');
+    const [demoLogs, setDemoLogs] = useState([]);
+
     const [comentario, setComentario] = useState('');
     const [calificacion, setCalificacion] = useState(0);
     const [formError, setFormError] = useState(null);
 
-    const handleResenaDelete = async (resenaId) => {
-        if (window.confirm("¿Estás seguro de que quieres eliminar esta reseña?")) {
-            try {
-                await deleteResenaRequest(resenaId);
-                // Actualiza el estado local para quitar la reseña eliminada
-                setReseñas(reseñas.filter(r => r.id !== resenaId));
-                alert("Reseña eliminada.");
-            } catch (err) {
-                alert(`Error al eliminar: ${err.message}`);
-            }
-        }
-    };
+    const totalResenas = useMemo(() => resenas.length, [resenas]);
 
-    // Carga los datos de la película y las reseñas
     const cargarDatos = async () => {
         try {
-            setLoading(true);
-            // Peticiones en paralelo
-            const [dataPelicula, dataReseñas] = await Promise.all([
-                getPeliculaRequest(id),
-                getResenasPorPeliculaRequest(id)
-            ]);
-            setPelicula(dataPelicula);
-            setReseñas(dataReseñas);
+            const peliData = await getPeliculaRequest(id);
+            const resenasData = await getResenasByPelicula(id);
+
+            setPelicula(peliData);
+            setResenas(resenasData);
             setError(null);
-        } catch (err) {
-            console.error("Error al cargar datos:", err);
-            setError("No se pudo cargar la información de la película.");
+        } catch (loadError) {
+            console.error('Error cargando datos', loadError);
+            setError('Error al cargar la película o las reseñas.');
         } finally {
             setLoading(false);
         }
@@ -54,50 +49,103 @@ function PeliculaDetallePage() {
 
     useEffect(() => {
         cargarDatos();
-    }, [id]); // Se vuelve a ejecutar si el ID de la película cambia
+    }, [id]);
 
-    // Manejador para enviar el formulario de reseña
-    const handleResenaSubmit = async (e) => {
-        e.preventDefault();
+    useEffect(() => {
+        const eventSource = connectResenasStreamByPelicula(
+            id,
+            (incomingResena) => {
+                setIsLiveConnected(true);
+                setResenas((prevResenas) => {
+                    const alreadyExists = prevResenas.some((item) => item.id === incomingResena.id);
+                    if (alreadyExists) {
+                        return prevResenas;
+                    }
+                    return [incomingResena, ...prevResenas];
+                });
+                setNewLiveMessageId(incomingResena.id);
+                setTimeout(() => setNewLiveMessageId(null), 1500);
+            },
+            () => {
+                setIsLiveConnected(false);
+            },
+        );
+
+        eventSource.onopen = () => setIsLiveConnected(true);
+
+        return () => {
+            eventSource.close();
+            setIsLiveConnected(false);
+        };
+    }, [id]);
+
+    const handleResenaDelete = async (resenaId) => {
+        if (window.confirm('¿Estás seguro de que quieres eliminar esta reseña?')) {
+            try {
+                await deleteResenaRequest(resenaId);
+                setResenas((prevResenas) => prevResenas.filter((resena) => resena.id !== resenaId));
+                alert('Reseña eliminada.');
+            } catch (deleteError) {
+                alert(`Error al eliminar: ${deleteError.message}`);
+            }
+        }
+    };
+
+    const handleResenaSubmit = async (event) => {
+        event.preventDefault();
         if (calificacion === 0) {
-            setFormError("Por favor, selecciona una calificación (1-5 estrellas).");
+            setFormError('Por favor, selecciona una calificación (1-5 estrellas).');
             return;
         }
+
         setFormError(null);
 
         try {
             const nuevaResena = {
                 comentario,
                 calificacion,
-                usuarioId: user.id, // Obtenido del AuthContext
-                peliculaId: parseInt(id, 10), // Obtenido de useParams
+                usuarioId: user.id,
+                peliculaId: parseInt(id, 10),
             };
 
-            const res = await createResenaRequest(nuevaResena);
+            const createdResena = await createResenaRequest(nuevaResena);
 
-            // Actualiza la lista de reseñas al instante
-            // CORRECCIÓN: El backend ahora devuelve la reseña completa,
-            // pero si no devuelve el nombre del usuario, lo simulamos.
-            const resenaConNombre = {
-                ...res,
-                usuarioNombre: user.nombreCompleto // Añade el nombre del usuario actual
-            };
-            setReseñas([resenaConNombre, ...reseñas]);
+            // Render inmediato para el emisor (además del stream SSE para el resto de clientes)
+            setResenas((prevResenas) => {
+                const alreadyExists = prevResenas.some((item) => item.id === createdResena.id);
+                if (alreadyExists) {
+                    return prevResenas;
+                }
+                return [{
+                    ...createdResena,
+                    usuarioNombre: createdResena.usuarioNombre || user?.nombreCompleto,
+                }, ...prevResenas];
+            });
 
-
-            // Limpia el formulario
             setComentario('');
             setCalificacion(0);
-
-        } catch (err) {
-            setFormError(`Error al enviar la reseña: ${err.message}`);
+        } catch (submitError) {
+            setFormError(`Error al enviar la reseña: ${submitError.message}`);
         }
     };
 
+    const handleTestBackpressure = async () => {
+        setDemoStatus('Solicitando proceso batch al servidor...');
+        setDemoLogs([]);
 
-    if (loading) return <h2 style={{ textAlign: 'center' }}>Cargando...</h2>;
-    if (error) return <h2 style={{ color: 'red', textAlign: 'center' }}>{error}</h2>;
-    if (!pelicula) return <h2>Película no encontrada.</h2>;
+        try {
+            const logsRecibidos = await triggerBackpressureDemo();
+            setDemoLogs(logsRecibidos);
+            setDemoStatus('✅ Proceso finalizado. Resultados:');
+        } catch (backpressureError) {
+            setDemoStatus('❌ Error al invocar demo');
+            console.error(backpressureError);
+        }
+    };
+
+    if (loading) return <h2 style={{ textAlign: 'center', marginTop: '2rem' }}>Cargando...</h2>;
+    if (error) return <h2 style={{ color: 'red', textAlign: 'center', marginTop: '2rem' }}>{error}</h2>;
+    if (!pelicula) return <h2 style={{ textAlign: 'center', marginTop: '2rem' }}>Película no encontrada.</h2>;
 
     const fechaEstreno = new Date(pelicula.fecha_estreno).toLocaleDateString('es-ES', {
         year: 'numeric',
@@ -107,26 +155,26 @@ function PeliculaDetallePage() {
 
     return (
         <div className="detalle-container">
-            {/* Sección de Detalles de la Película */}
             <div className="detalle-header">
                 <h1>{pelicula.titulo}</h1>
-                <p className="detalle-info">
-                    Dirigida por <strong>{pelicula.director}</strong>
-                </p>
-                <p className="detalle-info">
-                    {pelicula.genero} | {pelicula.duracion_minutos} minutos | Estreno: {fechaEstreno}
-                </p>
+                <p className="detalle-info">Dirigida por <strong>{pelicula.director}</strong></p>
+                <p className="detalle-info">{pelicula.genero} | {pelicula.duracion_minutos} minutos | Estreno: {fechaEstreno}</p>
             </div>
 
             <div className="detalle-body">
-                {/* Sección de Reseñas */}
                 <div className="reseñas-section">
-                    <h2>Reseñas</h2>
+                    <div className="live-reviews-header">
+                        <h2>Reseñas en vivo</h2>
+                        <div className={isLiveConnected ? 'live-pill connected' : 'live-pill disconnected'}>
+                            <span className="live-dot" />
+                            {isLiveConnected ? 'EN VIVO' : 'DESCONECTADO'}
+                        </div>
+                    </div>
+                    <p className="live-caption">Experiencia tipo chat por película · {totalResenas} mensajes en la sala.</p>
 
-                    {/* Formulario para crear reseña */}
                     {isAuthenticated ? (
                         <form onSubmit={handleResenaSubmit} className="resena-form">
-                            <h3>Deja tu reseña</h3>
+                            <h3>Publicar reseña al stream</h3>
                             <div className="star-rating">
                                 {[1, 2, 3, 4, 5].map((star) => (
                                     <span
@@ -134,54 +182,49 @@ function PeliculaDetallePage() {
                                         className={star <= calificacion ? 'star active' : 'star'}
                                         onClick={() => setCalificacion(star)}
                                     >
-                    ★
-                  </span>
+                                        ★
+                                    </span>
                                 ))}
                             </div>
                             <textarea
                                 rows="4"
                                 placeholder="Escribe tu comentario..."
                                 value={comentario}
-                                onChange={(e) => setComentario(e.target.value)}
+                                onChange={(event) => setComentario(event.target.value)}
                                 required
-                            ></textarea>
-                            <button type="submit">Publicar Reseña</button>
+                            />
+                            <button type="submit" style={{ marginTop: '10px' }}>Enviar al chat de reseñas</button>
                             {formError && <p className="error-msg">{formError}</p>}
                         </form>
                     ) : (
                         <div className="resena-login-prompt">
-                            <p>
-                                <Link to={`/login?redirect=/pelicula/${id}`}>Inicia sesión</Link> para dejar tu reseña.
-                            </p>
+                            <p><Link to={`/login?redirect=/pelicula/${id}`}>Inicia sesión</Link> para dejar tu reseña.</p>
                         </div>
                     )}
 
-                    {/* Lista de Reseñas */}
-                    <div className="resena-list">
-                        {reseñas.length > 0 ? (
-                            reseñas.map((resena) => {
-                                // --- INICIO DE LA CORRECCIÓN ---
-                                // Aseguramos que la calificación esté entre 0 y 5
+                    <div className="resena-list live-chat-list">
+                        {resenas.length > 0 ? (
+                            resenas.map((resena) => {
                                 const calificacionSegura = Math.max(0, Math.min(5, resena.calificacion || 0));
-                                // --- FIN DE LA CORRECCIÓN ---
-
                                 return (
-                                    <div key={resena.id} className="resena-card">
+                                    <div
+                                        key={resena.id}
+                                        className={`resena-card live-chat-item ${newLiveMessageId === resena.id ? 'new-message' : ''}`}
+                                    >
                                         <div className="resena-card-header">
-                                            <strong>{resena.usuarioNombre || 'Anónimo'}</strong>
+                                            <strong>{resena.usuarioNombre || `Usuario ${resena.usuarioId}`}</strong>
                                             <span className="resena-calificacion">
-                                                {/* Usamos la calificación segura */}
                                                 {'★'.repeat(calificacionSegura)}
-                                                {'☆'.repeat(5 - calificacionSegura)}
+                                                <span className="stars-empty">{'★'.repeat(5 - calificacionSegura)}</span>
                                             </span>
                                         </div>
                                         <p>{resena.comentario}</p>
-                                        {/* Mostrar botones si el usuario es dueño de la reseña */}
+
                                         {isAuthenticated && user?.id === resena.usuarioId && (
-                                            <div className="resena-actions" style={{marginTop: '10px'}}>
-                                                <button 
+                                            <div className="resena-actions" style={{ marginTop: '10px' }}>
+                                                <button
                                                     onClick={() => handleResenaDelete(resena.id)}
-                                                    style={{backgroundColor: '#8B0000', color: 'white', fontSize: '0.8em'}}
+                                                    style={{ backgroundColor: '#dc3545', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}
                                                 >
                                                     Eliminar
                                                 </button>
@@ -191,9 +234,41 @@ function PeliculaDetallePage() {
                                 );
                             })
                         ) : (
-                            <p>Todavía no hay reseñas para esta película. ¡Sé el primero!</p>
+                            <p>Todavía no hay reseñas. ¡Sé el primero en escribir en vivo!</p>
                         )}
                     </div>
+                </div>
+
+                <hr style={{ margin: '40px 0' }} />
+
+                <div className="lab-zone" style={{ backgroundColor: '#2d2d2d', color: '#f8f8f2', padding: '20px', borderRadius: '8px', marginTop: '30px', fontFamily: 'monospace' }}>
+                    <h4 style={{ marginTop: 0, color: '#ff79c6' }}>🧪 Laboratorio: Visualización de Backpressure</h4>
+                    <p style={{ marginBottom: '15px' }}>
+                        Al ejecutar, verás aquí los logs generados por el <code>CustomSubscriber</code> en el servidor.
+                    </p>
+
+                    <button
+                        onClick={handleTestBackpressure}
+                        style={{ backgroundColor: '#6272a4', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                    >
+                        ▶ Ejecutar Demo
+                    </button>
+
+                    {demoStatus && (
+                        <div style={{ marginTop: '15px', color: demoStatus.includes('Error') ? '#ff5555' : '#50fa7b' }}>
+                            {demoStatus}
+                        </div>
+                    )}
+
+                    {demoLogs.length > 0 && (
+                        <div style={{ marginTop: '15px', backgroundColor: '#000', padding: '10px', borderRadius: '5px', maxHeight: '300px', overflowY: 'auto', border: '1px solid #444' }}>
+                            {demoLogs.map((linea, index) => (
+                                <div key={index} style={{ borderBottom: '1px solid #333', padding: '2px 0' }}>
+                                    <span style={{ color: '#8be9fd' }}>$ </span>{linea}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

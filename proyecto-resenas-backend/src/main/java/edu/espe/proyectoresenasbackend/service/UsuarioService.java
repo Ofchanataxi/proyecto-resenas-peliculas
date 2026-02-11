@@ -1,5 +1,6 @@
 package edu.espe.proyectoresenasbackend.service;
 
+import edu.espe.proyectoresenasbackend.domain.Usuario;
 import edu.espe.proyectoresenasbackend.dto.UsuarioRequestData;
 import edu.espe.proyectoresenasbackend.dto.UsuarioResponse;
 
@@ -15,4 +16,5 @@ public interface UsuarioService {
     UsuarioResponse activate(Long id);
     UsuarioResponse update(Long id, UsuarioRequestData request);
     Object getStats();
+    Usuario createUser(UsuarioRequestData request);
 }

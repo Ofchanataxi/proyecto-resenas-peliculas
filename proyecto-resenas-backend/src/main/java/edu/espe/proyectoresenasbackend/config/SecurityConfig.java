@@ -56,9 +56,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "https://proyecto-resenas-frontend.onrender.com/"
+        configuration.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "http://127.0.0.1:*",
+                "https://proyecto-resenas-frontend.onrender.com"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Cache-Control"));
@@ -87,7 +88,13 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/resenas/peliculas/**").permitAll() // ANTES: /api/peliculas/**
                         .requestMatchers(HttpMethod.GET, "/api/resenas/cines/**").permitAll()    // ANTES: /api/cines/**
                         .requestMatchers(HttpMethod.GET, "/api/resenas/resena/**").permitAll()  // ANTES: /api/resenas/**
-                        // --- FIN DE LA CORRECCIÓN ---
+                        // NUEVOS
+                        .requestMatchers(HttpMethod.GET, "/api/resenas/chat/stream").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/resenas/chat/messages/recent").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/resenas/chat/simulator/status").permitAll()
+
+                        // Las operaciones de escritura en chat requieren autenticación
+                        .requestMatchers("/api/resenas/chat/**").authenticated()
 
                         // El resto requiere autenticación
                         .anyRequest().authenticated()

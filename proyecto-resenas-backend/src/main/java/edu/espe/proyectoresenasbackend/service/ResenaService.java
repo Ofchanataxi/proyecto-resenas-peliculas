@@ -2,20 +2,19 @@ package edu.espe.proyectoresenasbackend.service;
 
 import edu.espe.proyectoresenasbackend.dto.ResenaRequest;
 import edu.espe.proyectoresenasbackend.dto.ResenaResponse;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 
-//Servicio para la entidad Resena
 public interface ResenaService {
-    ResenaResponse create(ResenaRequest request);
+    Mono<ResenaResponse> create(ResenaRequest request);
+    Mono<ResenaResponse> get(Long id);
+    Flux<ResenaResponse> list();
+    Mono<ResenaResponse> update(Long id, ResenaRequest request);
+    Mono<Void> delete(Long id);
+    Flux<ResenaResponse> listByPeliculaId(Long peliculaId);
+    Flux<ResenaResponse> streamByPeliculaId(Long peliculaId);
 
-    ResenaResponse get(Long id);
-
-    List<ResenaResponse> list();
-
-    ResenaResponse update(Long id, ResenaRequest request);
-
-    void delete(Long id);
-
-    List<ResenaResponse> listByPeliculaId(Long peliculaId);
+    List<String> procesarCalificacionesPorLotes();
 }
