@@ -3,7 +3,7 @@ package edu.espe.proyectoresenasbackend.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
-// DTO para la solicitud de inicio de sesión
+// DTO para la solicitud de inicio de sesión prueba
 
 public class LoginRequest {
     @NotBlank
