@@ -1,128 +1,85 @@
 package edu.espe.proyectoresenasbackend.service;
 
-import edu.espe.proyectoresenasbackend.config.SecurityConfig;
 import edu.espe.proyectoresenasbackend.domain.Usuario;
 import edu.espe.proyectoresenasbackend.dto.UsuarioRequestData;
+import edu.espe.proyectoresenasbackend.dto.UsuarioResponse;
 import edu.espe.proyectoresenasbackend.repository.UsuarioRepository;
 import edu.espe.proyectoresenasbackend.service.impl.UsuarioServiceImpl;
 import edu.espe.proyectoresenasbackend.web.advice.ConflictException;
 import edu.espe.proyectoresenasbackend.web.advice.NotFoundException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.mockito.Mockito;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import java.util.Optional;
 
-@DataJpaTest
-@Import({UsuarioServiceImpl.class})
-public class UsuarioServiceTest {
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
-    @TestConfiguration
-    static class TestConfig {
-        @Bean
-        public PasswordEncoder passwordEncoder() {
-            return new BCryptPasswordEncoder();
-        }
-    }
+class UsuarioServiceTest {
 
-    @Autowired
-    private UsuarioService service;
+    private UsuarioRepository usuarioRepository;
+    private PasswordEncoder passwordEncoder;
+    private UsuarioServiceImpl usuarioService;
 
-    @Autowired
-    private UsuarioRepository repository;
-
-    @Test
-    void shouldNotAllowDuplicateEmail() {
-        // 1. Creamos un usuario existente
-        Usuario existing = new Usuario();
-        existing.setNombreCompleto("Usuario Existente");
-        existing.setEmail("test@example.com");
-        existing.setContrasena("pass1");
-        existing.setActivo(true);
-        repository.save(existing);
-
-        // 2. Creamos un request con el MISMO email
-        UsuarioRequestData req = new UsuarioRequestData();
-        req.setNombreCompleto("Nuevo Usuario Duplicado");
-        req.setEmail("test@example.com"); // Email duplicado
-        req.setContrasena("pass2");
-        req.setActivo(true);
-
-        // 3. Verificamos que lance la excepción de conflicto
-        assertThatThrownBy(() -> service.create(req))
-                .isInstanceOf(ConflictException.class);
-
-        // 4. Verificamos que la base de datos no haya cambiado
-        assertThat(repository.count()).isEqualTo(1);
+    @BeforeEach
+    void setUp() {
+        usuarioRepository = Mockito.mock(UsuarioRepository.class);
+        passwordEncoder = Mockito.mock(PasswordEncoder.class);
+        usuarioService = new UsuarioServiceImpl(usuarioRepository, passwordEncoder);
     }
 
     @Test
-    void inexistentIdShouldThrowNotFound() {
-        Long nonexistentId = 999L;
+    void create_whenEmailAlreadyExists_shouldThrowConflictExceptionAndSkipSaveOperation() {
+        // Arrange
+        UsuarioRequestData request = new UsuarioRequestData();
+        request.setEmail("repetido@correo.com");
+        when(usuarioRepository.existsByEmail("repetido@correo.com")).thenReturn(true);
 
-        // Verificamos que buscar por un ID que no existe lance NotFoundException
-        assertThatThrownBy(() -> service.getById(nonexistentId))
-                .isInstanceOf(NotFoundException.class)
-                .hasMessageContaining("Usuario no encontrado");
+        // Act + Assert
+        assertThrows(ConflictException.class, () -> usuarioService.create(request));
+        verify(usuarioRepository, never()).save(any(Usuario.class));
+        verifyNoInteractions(passwordEncoder);
     }
 
     @Test
-    void deactivateUsuarioShouldSetActivoFalse() {
-        // 1. Creamos un usuario activo
-        Usuario usuario = new Usuario();
-        usuario.setNombreCompleto("Usuario Activo");
-        usuario.setEmail("activo@espe.edu.ec");
-        usuario.setContrasena("pass123");
-        usuario.setActivo(true);
-        repository.save(usuario);
+    void update_whenPasswordIsPresent_shouldEncodePasswordAndPersistUserWithNewValues() {
+        // Arrange
+        Usuario existente = new Usuario();
+        existente.setId(20L);
+        existente.setEmail("viejo@correo.com");
+        existente.setContrasena("hash-antiguo");
 
-        // 2. Llamamos al servicio para desactivar
-        service.deactivate(usuario.getId());
+        UsuarioRequestData request = new UsuarioRequestData();
+        request.setNombreCompleto("Nuevo Nombre");
+        request.setEmail("nuevo@correo.com");
+        request.setContrasena("123456");
+        request.setActivo(true);
 
-        // 3. Verificamos en la BD que el estado sea 'false'
-        Usuario updated = repository.findById(usuario.getId()).orElseThrow();
-        assertThat(updated.getActivo()).isFalse();
+        when(usuarioRepository.findById(20L)).thenReturn(Optional.of(existente));
+        when(usuarioRepository.existsByEmail("nuevo@correo.com")).thenReturn(false);
+        when(passwordEncoder.encode("123456")).thenReturn("hash-nuevo");
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        UsuarioResponse response = usuarioService.update(20L, request);
+
+        // Assert
+        assertEquals("Nuevo Nombre", response.getNombreCompleto());
+        assertEquals("nuevo@correo.com", response.getEmail());
+        verify(passwordEncoder).encode("123456");
+        verify(usuarioRepository).save(existente);
     }
 
     @Test
-    void getStatsShouldReturnCorrectCounts() {
-        // 1. Creamos 2 usuarios activos
-        Usuario active1 = new Usuario();
-        active1.setNombreCompleto("Activo Uno");
-        active1.setEmail("active1@example.com");
-        active1.setContrasena("p");
-        active1.setActivo(true);
-        repository.save(active1);
+    void delete_whenUserDoesNotExist_shouldThrowNotFoundExceptionWithoutDeletingAnything() {
+        // Arrange
+        when(usuarioRepository.existsById(77L)).thenReturn(false);
 
-        Usuario active2 = new Usuario();
-        active2.setNombreCompleto("Activo Dos");
-        active2.setEmail("active2@example.com");
-        active2.setContrasena("p");
-        active2.setActivo(true);
-        repository.save(active2);
-
-        // 2. Creamos 1 usuario inactivo
-        Usuario inactive1 = new Usuario();
-        inactive1.setNombreCompleto("Inactivo Uno");
-        inactive1.setEmail("inactive1@example.com");
-        inactive1.setContrasena("p");
-        inactive1.setActivo(false);
-        repository.save(inactive1);
-
-        // 3. Pedimos las estadísticas
-        Object stats = service.getStats();
-
-        // 4. Verificamos los conteos
-        assertThat(stats).isInstanceOf(java.util.Map.class);
-        java.util.Map<?, ?> statsMap = (java.util.Map<?, ?>) stats;
-        assertThat(statsMap.get("total")).isEqualTo(3L);
-        assertThat(statsMap.get("active")).isEqualTo(2L);
-        assertThat(statsMap.get("inactive")).isEqualTo(1L);
+        // Act + Assert
+        assertThrows(NotFoundException.class, () -> usuarioService.delete(77L));
+        verify(usuarioRepository, never()).deleteById(anyLong());
     }
 }

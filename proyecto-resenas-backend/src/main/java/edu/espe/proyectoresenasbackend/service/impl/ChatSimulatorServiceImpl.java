@@ -54,8 +54,8 @@ public class ChatSimulatorServiceImpl implements ChatSimulatorService {
     };
 
     public ChatSimulatorServiceImpl(UsuarioRepository usuarioRepository,
-                                ChatService chatService,
-                                PasswordEncoder passwordEncoder) {
+                                    ChatService chatService,
+                                    PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
         this.chatService = chatService;
         this.passwordEncoder = passwordEncoder;
