@@ -27,6 +27,9 @@ class PeliculaServiceTest {
         peliculaService = new PeliculaServiceImpl(peliculaRepository);
     }
 
+
+    //comentario
+
     @Test
     void create_whenRequestIsValid_shouldMapEntitySaveAndReturnMappedResponse() {
         // Arrange
